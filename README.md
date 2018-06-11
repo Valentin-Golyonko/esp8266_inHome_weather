@@ -14,7 +14,7 @@ In this example ESP8266 has:
  - HTTP server with a file read/upload handler;
  - connects all sensors and displays them on the LCD;
  - periodically store incoming data in the memory.
-So you can load webpage with domain names http://esp8266.local and enjoy cute weather server build on microcontroller with 4Mb flash and 80kb RAM :wink:.
+<p>So you can load webpage with domain names http://esp8266.local and enjoy cute weather server build on microcontroller with 4Mb flash and 80kb RAM :wink:. </p>
 
 If you want to watch webpage (without ESP you can't run it): https://youtu.be/D3MsvsaVtrQ
 
