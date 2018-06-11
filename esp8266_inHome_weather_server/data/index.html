@@ -79,93 +79,27 @@
 					<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
 						<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
 							<h1 class="h2">Dashboard</h1>
+							<div id="loading">Loading...</div>
 							<div class="btn-toolbar mb-2 mb-md-0">
-								<!-- visible | hidden -->
-								<div id="dateselect" style="visibility: visible;" class="btn-group mr-2">
-									<div id="navTempr" class="btn-group mr-2" style="display: none;">
-										<div id="dateTempr" class="btn-group mr-2"></div>
-										<button class="btn btn-sm btn-outline-secondary" id="prevTempr">
+								<div class="btn-group mr-2" >
+									<div class="btn-group mr-2">
+										<div id="date" class="h5 text-primary mx-2 my-1"></div>
+										<button id="prev" class="btn btn-sm btn-outline-secondary">
 											<span data-feather="arrow-left"></span>
 										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="nextTempr">
+										<button id="next" class="btn btn-sm btn-outline-secondary">
 											<span data-feather="arrow-right"></span>
 										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoomoutTempr">
+										<button id="zoomout" class="btn btn-sm btn-outline-secondary">
 											<span data-feather="zoom-out"></span>
 										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoominTempr">
+										<button id="zoomin" class="btn btn-sm btn-outline-secondary">
 											<span data-feather="zoom-in"></span>
 										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="resetTempr">
+										<button id="reset" class="btn btn-sm btn-outline-secondary">
 											Reset
 										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="refreshTempr">
-											Refresh
-										</button>
-									</div>
-								
-									<div id="navHum" class="btn-group mr-2" style="display: none;">
-										<div id="dateHum" class="btn-group mr-2"></div>
-										<button class="btn btn-sm btn-outline-secondary" id="prevHum">
-											<span data-feather="arrow-left"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="nextHum">
-											<span data-feather="arrow-right"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoomoutHum">
-											<span data-feather="zoom-out"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoominHum">
-											<span data-feather="zoom-in"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="resetHum">
-											Reset
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="refreshHum">
-											Refresh
-										</button>
-									</div>
-																
-									<div id="navAir" class="btn-group mr-2" style="display: none;">
-										<div id="dateAir" class="btn-group mr-2"></div>
-										<button class="btn btn-sm btn-outline-secondary" id="prevAir">
-											<span data-feather="arrow-left"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="nextAir">
-											<span data-feather="arrow-right"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoomoutAir">
-											<span data-feather="zoom-out"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoominAir">
-											<span data-feather="zoom-in"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="resetAir">
-											Reset
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="refreshAir">
-											Refresh
-										</button>
-									</div>
-																
-									<div id="navPre" class="btn-group mr-2" style="display: none;">
-										<div id="datePre" class="btn-group mr-2"></div>
-										<button class="btn btn-sm btn-outline-secondary" id="prevPre">
-											<span data-feather="arrow-left"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="nextPre">
-											<span data-feather="arrow-right"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoomoutPre">
-											<span data-feather="zoom-out"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="zoominPre">
-											<span data-feather="zoom-in"></span>
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="resetPre">
-											Reset
-										</button>
-										<button class="btn btn-sm btn-outline-secondary" id="refreshPre">
+										<button id="refresh" class="btn btn-sm btn-outline-secondary">
 											Refresh
 										</button>
 									</div>
@@ -173,7 +107,6 @@
 							</div>
 						</div>
 						
-						<div id="loading">Loading...</div>
 						<div class="my-4 w-100" id="chart_div" width="900" height="380"></div>
 						
 					</main>
@@ -182,10 +115,7 @@
 		</div>
 	</div>
 	
-	<script src="temprGraph.js"></script>
-	<script src="humGraph.js"></script>
-	<script src="airGraph.js"></script>
-	<script src="pressureGraph.js"></script>
+	<script src="buildGraph.js"></script>
 	
 	<!-- Icons -->
     <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
