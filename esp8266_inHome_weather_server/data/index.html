@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>inHome Weather</title>
+	
+    <!-- Bootstrap .css and .js -->
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+	
+	<!-- jQuery.js and Popper.js  -->
+	<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#00878f">
+    <meta content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport'>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+	
+</head>
+<body>
+
+	<header class="bs-docs-nav navbar-static-top" id="top">
+		<div class="container" >
+			<nav class="navbar navbar-inverse text-light bg-dark">
+				<p class="navbar-text">
+					mede by Valik &nbsp
+					<a href="https://github.com/Valentin-Golyonko" class="navbar-link">
+						<span data-feather="github"></span>
+					</a>
+				</p>
+				<p class="navbar-text navbar-right">
+					upload new files &nbsp
+					<a href=" http://esp8266.local/edit.html " class="navbar-link">
+						<span data-feather="upload"></span>
+					</a>
+				</p>
+			</nav>
+		</div>
+	</header>
+	
+	<div class="bs-docs-header" id="content" tabindex="-1">
+		<div class="container bs-docs-conteiner">
+			<div class="container-fluid bg-light">
+				<div class="row ">
+					<nav class="col-md-2 d-none d-md-block bg-light sidebar">
+					  <div class="sidebar-sticky">
+						<ul class="nav flex-column">
+						  <li class="nav-item">
+							<a class="nav-link active" href="#" id="getTempr">
+							  <span data-feather="thermometer"></span>
+							  Temperature <span class="sr-only">(current)</span>
+							</a>
+						  </li>
+						  <li class="nav-item">
+							<a class="nav-link active" href="#" id="getHum">
+							  <span data-feather="cloud-rain"></span>
+							  Humidity <span class="sr-only">(current)</span>
+							</a>
+						  </li>
+						  <li class="nav-item">
+							<a class="nav-link active" href="#" id="getAir">
+							  <span data-feather="award"></span>
+							  Air quality <span class="sr-only">(current)</span>
+							</a>
+						  </li>
+						  <li class="nav-item">
+							<a class="nav-link active" href="#" id="getPre">
+							  <span data-feather="wind"></span>
+							  Preassure <span class="sr-only">(current)</span>
+							</a>
+						  </li>
+						</ul>
+					</nav>
+					
+					<main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+						<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+							<h1 class="h2">Dashboard</h1>
+							<div class="btn-toolbar mb-2 mb-md-0">
+								<!-- visible | hidden -->
+								<div id="dateselect" style="visibility: visible;" class="btn-group mr-2">
+									<div id="navTempr" class="btn-group mr-2" style="display: none;">
+										<div id="dateTempr" class="btn-group mr-2"></div>
+										<button class="btn btn-sm btn-outline-secondary" id="prevTempr">
+											<span data-feather="arrow-left"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="nextTempr">
+											<span data-feather="arrow-right"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoomoutTempr">
+											<span data-feather="zoom-out"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoominTempr">
+											<span data-feather="zoom-in"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="resetTempr">
+											Reset
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="refreshTempr">
+											Refresh
+										</button>
+									</div>
+								
+									<div id="navHum" class="btn-group mr-2" style="display: none;">
+										<div id="dateHum" class="btn-group mr-2"></div>
+										<button class="btn btn-sm btn-outline-secondary" id="prevHum">
+											<span data-feather="arrow-left"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="nextHum">
+											<span data-feather="arrow-right"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoomoutHum">
+											<span data-feather="zoom-out"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoominHum">
+											<span data-feather="zoom-in"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="resetHum">
+											Reset
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="refreshHum">
+											Refresh
+										</button>
+									</div>
+																
+									<div id="navAir" class="btn-group mr-2" style="display: none;">
+										<div id="dateAir" class="btn-group mr-2"></div>
+										<button class="btn btn-sm btn-outline-secondary" id="prevAir">
+											<span data-feather="arrow-left"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="nextAir">
+											<span data-feather="arrow-right"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoomoutAir">
+											<span data-feather="zoom-out"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoominAir">
+											<span data-feather="zoom-in"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="resetAir">
+											Reset
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="refreshAir">
+											Refresh
+										</button>
+									</div>
+																
+									<div id="navPre" class="btn-group mr-2" style="display: none;">
+										<div id="datePre" class="btn-group mr-2"></div>
+										<button class="btn btn-sm btn-outline-secondary" id="prevPre">
+											<span data-feather="arrow-left"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="nextPre">
+											<span data-feather="arrow-right"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoomoutPre">
+											<span data-feather="zoom-out"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="zoominPre">
+											<span data-feather="zoom-in"></span>
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="resetPre">
+											Reset
+										</button>
+										<button class="btn btn-sm btn-outline-secondary" id="refreshPre">
+											Refresh
+										</button>
+									</div>
+								</div>
+							</div>
+						</div>
+						
+						<div id="loading">Loading...</div>
+						<div class="my-4 w-100" id="chart_div" width="900" height="380"></div>
+						
+					</main>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<script src="temprGraph.js"></script>
+	<script src="humGraph.js"></script>
+	<script src="airGraph.js"></script>
+	<script src="pressureGraph.js"></script>
+	
+	<!-- Icons -->
+    <script src="https://unpkg.com/feather-icons/dist/feather.min.js"></script>
+    <script>
+      feather.replace()
+    </script>
+	
+ </body>
+</html>
