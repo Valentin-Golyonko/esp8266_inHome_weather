@@ -18,7 +18,7 @@ Prototype:
 <img src="https://github.com/Valentin-Golyonko/esp8266_inHome_weather/blob/master/img/prototipe_view.jpg" alt="prototipe_view">
 
 # TODO
- - fix bug in the navigation menu;
+ - <s>fix bug in the navigation menu;</s>
  - add RTC auto update from NTP;
  - PCB and protection casing.
 
