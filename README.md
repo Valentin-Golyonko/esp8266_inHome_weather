@@ -8,8 +8,15 @@ esp8266 local web server with:
  - Bootstrap web framework.
 
 # How it works
-<p> ESP8266 turn on local web server with OTA, mDNS, UDP for NTP, starts the SPIFFS to list all contents, starts a HTTP server with a file read/upload handler, connects all sensors, then displays them on the LCD and periodically store incoming data in the ESP memory.</p>
-<p> So you can load webpage with domain names http://esp8266.local and enjoy cute weather server build on microcontroller with 4Mb flash and 80kb RAM :wink:.</p>
+In this example ESP8266 has:
+ - local web server with OTA, mDNS, UDP (for NTP);
+ - SPIFFS to list all contents;
+ - HTTP server with a file read/upload handler;
+ - connects all sensors and displays them on the LCD;
+ - periodically store incoming data in the memory.
+So you can load webpage with domain names http://esp8266.local and enjoy cute weather server build on microcontroller with 4Mb flash and 80kb RAM :wink:.
+
+If you want to watch webpage (without ESP you can't run it): https://youtu.be/D3MsvsaVtrQ
 
 Webpage:
 <img src="https://github.com/Valentin-Golyonko/esp8266_inHome_weather/blob/master/img/web_view.png" alt="web_view">
