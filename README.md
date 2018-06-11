@@ -17,5 +17,10 @@ Webpage:
 Prototype:
 <img src="https://github.com/Valentin-Golyonko/esp8266_inHome_weather/blob/master/img/prototipe_view.jpg" alt="prototipe_view">
 
+# TODO
+ - fix bug in the navigation menu;
+ - add RTC auto update from NTP;
+ - PCB and protection casing.
+
 # Thanks 
 Huge thanks to <a href="https://tttapa.github.io/ESP8266/Chap01%20-%20ESP8266.html">Pieter P.</a> for the detailed guide on how to work with the microcontroller!
