@@ -1,6 +1,6 @@
-// Sketch uses 350564 bytes (33%) of program storage space. Maximum is 1044464 bytes.
-// Global variables use 38840 bytes (47%) of dynamic memory, leaving 43080 bytes for local variables. Maximum is 81920 bytes.
-// 'Data folder' use 38,604 bytes.
+// Sketch uses 350076 bytes (33%) of program storage space. Maximum is 1044464 bytes.
+// Global variables use 38912 bytes (47%) of dynamic memory, leaving 43008 bytes for local variables. Maximum is 81920 bytes.
+// "data" holder size = 21,407 bytes
 //
 // Based on https://tttapa.github.io/ESP8266/Chap01%20-%20ESP8266.html
 
@@ -13,8 +13,6 @@
 #include <ArduinoOTA.h>
 #include <WebSocketsServer.h>
 #include <Wire.h>
-#include <DHT.h>
-#include <DHT_U.h>
 #include <MQ135.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
@@ -72,10 +70,6 @@ Adafruit_SSD1306 display(OLED_RESET);
 
 Adafruit_BME280 bme; // I2C
 
-#define DHTPIN 2
-#define DHTTYPE DHT22
-DHT dht(DHTPIN, DHTTYPE);
-
 #define MQ135_PIN A0
 MQ135 gasSensor = MQ135(MQ135_PIN);
 
@@ -85,7 +79,7 @@ char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 unsigned long sensorsUpdateMillis = 0;  // sensors udate
 const int sensorsUpdatePeriod = 5000;  // sensors update
 
-float t1 = -1, h1 = -1, a = -1, t2 = -1, h2 = -1, p = -1;
+float a = -1, t = -1, h = -1, p = -1;
 bool show = true;
 
 // The certificate is stored in PMEM
@@ -124,10 +118,14 @@ void setup ( void ) {
   display.display();
 
   bme.begin(0x76);
-  dht.begin();
-  rtc.begin();  // start clock
-  // following line sets the RTC to the date & time this sketch was compiled
-  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  if (rtc.lostPower()) {
+    Serial.println("RTC lost power, lets set the time!");
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
 
   startWiFi();      // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
   startOTA();       // Start the OTA service
@@ -149,12 +147,12 @@ void setup ( void ) {
 /*__________________________________________________________LOOP__________________________________________________________*/
 
 void loop (void) {
-
-  DateTime now = rtc.now();
+  
   unsigned long currentMillis = millis();
 
   if (currentMillis - prevNTP > intervalNTP) {    // Request the time from the time server every hour
     prevNTP = currentMillis;
+    
     WiFi.hostByName(ntpServerName, timeServerIP); // Get the IP address of the NTP server
     Serial.println("Time server IP:\t" + (String)timeServerIP);
     sendNTPpacket(timeServerIP);
@@ -162,7 +160,8 @@ void loop (void) {
     uint32_t time = getTime();      // Check if the time server has responded, if so, get the UNIX time
     if (time) {
       timeUNIX = time;
-      //rtsTime = rtc.adjust(DateTime(....));   // TODO !!!
+      // January 21, 2014 at 3am you would call:
+      //rtc.adjust(DateTime(2014, 1, 21, (int)timeUNIX % 86400 / 3600, (int)timeUNIX % 3600 / 60, (int)timeUNIX % 60));
       //Serial.println("RTC Update");
       Serial.println("NTP response:\t" + (String)timeUNIX);
       lastNTPResponse = millis();
@@ -181,51 +180,50 @@ void loop (void) {
 
   if (currentMillis - sensorsRequest > sensorsRequestPeriod) {
     sensorsRequest = currentMillis;
+    
+    DateTime now = rtc.now();
     uint32_t timeNow = now.unixtime() - 3*60*60; // minus 3h
     if (timeNow != 0) {
+      
       showTimeNow();
 
-      String t2_t = (String)t2; // Compare to "nan", to avoid holes in graphics
-      if (!t2_t.equals("nan")) {
+      String t_t = (String)t; // Compare to "nan", to avoid holes in graphics
+      if (!t_t.equals("nan")) {
         Serial.printf("Appending temperature to file: %lu,", timeNow);
-        float temp1 = t2;      // Get the temperature from the sensor
-        Serial.println(temp1);
+        Serial.println(t);
 
         File tempLog = SPIFFS.open("/tempr.csv", "a");  // Write the time and the temperature to the csv file
-        tempLog.println((String)timeNow + ',' + (String)temp1);
+        tempLog.println((String)timeNow + ',' + (String)t);
         tempLog.close();
       }
 
-      String h2_t = (String)h2;   // Compare to "nan", to avoid holes in graphics
-      if (!h2_t.equals("nan")) {
+      String h_t = (String)h;   // Compare to "nan", to avoid holes in graphics
+      if (!h_t.equals("nan")) {
         Serial.printf("Appending humidity to file: %lu,", timeNow);
-        float hum1 = h2;
-        Serial.println(hum1);
+        Serial.println(h);
 
         File humLog = SPIFFS.open("/hum.csv", "a");     // Write the time and the temperature to the csv file
-        humLog.println((String)timeNow + ',' + (String)hum1);
+        humLog.println((String)timeNow + ',' + (String)h);
         humLog.close();
       }
 
       String air_t = (String)a;   // Compare to "nan", to avoid holes in graphics
       if (!air_t.equals("nan")) {
-        Serial.printf("Appending humidity to file: %lu,", timeNow);
-        float air = a;
-        Serial.println(air);
+        Serial.printf("Appending air to file: %lu,", timeNow);
+        Serial.println(a);
 
         File airLog = SPIFFS.open("/air.csv", "a");     // Write the time and the temperature to the csv file
-        airLog.println((String)timeNow + ',' + (String)air);
+        airLog.println((String)timeNow + ',' + (String)a);
         airLog.close();
       }
 
       String press_t = (String)p;   // Compare to "nan", to avoid holes in graphics
       if (!press_t.equals("nan")) {
-        Serial.printf("Appending humidity to file: %lu,", timeNow);
-        float pre = p;
-        Serial.println(pre);
+        Serial.printf("Appending pressure to file: %lu,", timeNow);
+        Serial.println(p);
 
         File preLog = SPIFFS.open("/pre.csv", "a");     // Write the time and the temperature to the csv file
-        preLog.println((String)timeNow + ',' + (String)pre);
+        preLog.println((String)timeNow + ',' + (String)p);
         preLog.close();
       }
     } else {      // If we didn't receive an NTP response yet, send another request
@@ -237,28 +235,19 @@ void loop (void) {
   if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensers every 'period'
     sensorsUpdateMillis = currentMillis;
 
-    t1 = dht.readTemperature();
-    //Serial.println("temp1: " + (String)t1);
-    h1 = dht.readHumidity();
-    //Serial.println("hum2: " + (String)h1);
-    a = gasSensor.getPPM();
+    t = bme.readTemperature();
+    h = bme.readHumidity();
+    a = gasSensor.getCorrectedPPM(t, h);
     //float zero = gasSensor.getRZero();
     //Serial.println("gas: " + (String)a + " zero: " + (String)zero);
-    t2 = bme.readTemperature();
-    //Serial.println("temp2: " + (String)t2);
-    h2 = bme.readHumidity();
-    //Serial.println("hum2: " + (String)h2);
     p = bme.readPressure() * 0.0075006;   // to 'mmHg'
-    //Serial.println("press: " + (String)p);
-    //Serial.println("-----------------------------" );
 
     if (show) {   // display sensors: Time + t2 + h2 for 5 sec, then Wifi IP + Air + pressure for 5 sec
       RTC();    // display Time
-      display.println(""); // offset
 
       display.setTextSize(2);
-      display.println((String)t2 + " *C");
-      display.println((String)h2 + " %");
+      display.println((String)t + " *C");
+      display.println((String)h + " %");
       display.display();
 
       show = false;
@@ -520,9 +509,8 @@ void RTC() {
   display.print(':');
   display.print(now.minute(), DEC);
   display.print(':');
-  display.print(now.second(), DEC);
-  display.println();
-  //display.display();
+  display.println(now.second(), DEC);
+  display.println("");
 }
 
 void showTimeNow() {
