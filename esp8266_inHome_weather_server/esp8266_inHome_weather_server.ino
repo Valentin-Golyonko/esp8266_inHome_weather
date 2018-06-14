@@ -151,8 +151,6 @@ void loop (void) {
   if (currentMillis - prevNTP > intervalNTP) {    // Request the time from the time server every hour
     prevNTP = currentMillis;
 
-    startWiFi();            // reconnect to better Wifi point
-
     tryGetNTPresponse();    // work with NTP and try to synchronize RTC with time Server
   }
 
@@ -164,6 +162,10 @@ void loop (void) {
 
   if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensers every 'period'
     sensorsUpdateMillis = currentMillis;
+    
+    if (wifiMulti.run() == WL_DISCONNECTED) { // reconnect to better or new Wifi point
+      startWiFi();                            // and you do't need to do it at avery CPU tact - so it here
+    }
 
     t = bme.readTemperature();
     h = bme.readHumidity();
