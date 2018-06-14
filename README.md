@@ -26,7 +26,8 @@ Prototype:
 
 # TODO
  - <s>fix bug in the navigation menu;</s>
- - add RTC auto update from NTP;
+ - <s>add RTC auto update from NTP;</s>
+ - add SPI flash to store the data;
  - PCB and protection casing.
 
 # Thanks 
