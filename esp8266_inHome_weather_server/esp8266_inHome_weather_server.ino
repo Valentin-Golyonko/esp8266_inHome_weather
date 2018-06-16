@@ -17,7 +17,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>   // 5 mA
 #include <Adafruit_BME280.h>    // 0.007 mA
-#include <FS.h>
+#include <FS.h>                 // set to SPIFFS to max before uploading the sketch, or you will lose all .csv files
 #include "RTClib.h"             // 1.781 mA
 
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
@@ -39,7 +39,7 @@ uint32_t timeUNIX = 0;        // The most recent timestamp received from the tim
 const unsigned long sensorsRequestPeriod = 10 * 60000; // Do a temperature measurement every 10min
 unsigned long sensorsRequest = 0;
 
-const char *ssid_1 = "----";
+const char *ssid_1 = "----";        // set up your own wifi config !
 const char *password_1 = "----";
 const char *ssid_2 = "----";
 const char *password_2 = "----";
@@ -49,7 +49,7 @@ bool handleFileRead(String path);       // SPIFFS
 File fsUploadFile;      // a File variable to temporarily store the received file
 
 const char *OTAName = "ESP8266";          // A name and a password for the OTA service
-const char *OTAPassword = "----";
+const char *OTAPassword = "----";   // set up your own OTA pass!
 
 const char* mdnsName = "esp8266";         // Domain name for the mDNS responder
 
@@ -81,14 +81,14 @@ const int sensorsUpdatePeriod = 5000;   // sensors update
 
 float a = -1, t = -1, h = -1, p = -1;
 bool show = true;
-bool bootUp = true;
+bool bootUp = false;
 
 static const uint8_t x509[] PROGMEM = {   // The certificate is stored in PMEM
-  0x30, ----, 0xd4
+  0x30, 0xd4                              // set up your own security certificate!
 };
 
 static const uint8_t rsakey[] PROGMEM = {   // And so is the key.  These could also be in DRAM
-  0x30, ----, 0x3f
+  0x30, 0x3f                                // set up your own security key!
 };
 
 void setup ( void ) {
@@ -183,6 +183,8 @@ void loop (void) {
     p = bme.readPressure() * 0.0075006;     // to 'mmHg'
 
     displayYourStaff();     // show collected data
+
+    bootUp = true;
   }
 
   ArduinoOTA.handle();      // listen for OTA events
