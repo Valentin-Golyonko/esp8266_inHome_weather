@@ -1,4 +1,4 @@
-// Sketch uses 350004 bytes (33%) of program storage space. Maximum is 1044464 bytes.
+// Sketch uses 349924 bytes (33%) of program storage space. Maximum is 1044464 bytes.
 // Global variables use 38848 bytes (47%) of dynamic memory, leaving 43072 bytes for local variables. Maximum is 81920 bytes.
 // "data" holder size = 21,407 bytes
 //
@@ -13,7 +13,7 @@
 #include <ArduinoOTA.h>
 #include <WebSocketsServer.h>
 #include <Wire.h>
-#include <MQ135.h>              // 83.4 mA
+#include <MQ135.h>              // 83.4 mA, RZERO = 230.00
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>   // 5 mA
 #include <Adafruit_BME280.h>    // 0.007 mA
@@ -36,7 +36,7 @@ unsigned long prevNTP = 0;
 unsigned long lastNTPResponse = millis();
 uint32_t timeUNIX = 0;        // The most recent timestamp received from the time server
 
-const unsigned long sensorsRequestPeriod = 60000; // Do a temperature measurement every minute
+const unsigned long sensorsRequestPeriod = 10 * 60000; // Do a temperature measurement every 10min
 unsigned long sensorsRequest = 0;
 
 const char *ssid_1 = "----";
@@ -68,7 +68,7 @@ Adafruit_SSD1306 display(OLED_RESET);
 #error("Height incorrect, please fix Adafruit_SSD1306.h!");
 #endif
 
-Adafruit_BME280 bme; // I2C
+Adafruit_BME280 bme;
 
 #define MQ135_PIN A0
 MQ135 gasSensor = MQ135(MQ135_PIN);
@@ -77,17 +77,18 @@ RTC_DS3231 rtc;
 char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 unsigned long sensorsUpdateMillis = 0;  // sensors udate
-const int sensorsUpdatePeriod = 5000;  // sensors update
+const int sensorsUpdatePeriod = 5000;   // sensors update
 
 float a = -1, t = -1, h = -1, p = -1;
 bool show = true;
+bool bootUp = true;
 
 static const uint8_t x509[] PROGMEM = {   // The certificate is stored in PMEM
-  0x30, 0xd4
+  0x30, ----, 0xd4
 };
 
 static const uint8_t rsakey[] PROGMEM = {   // And so is the key.  These could also be in DRAM
-  0x30, 0x3f
+  0x30, ----, 0x3f
 };
 
 void setup ( void ) {
@@ -96,7 +97,7 @@ void setup ( void ) {
   delay(10);
   Serial.println('\r\n');
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite (LED_BUILTIN, LOW);
+  digitalWrite (LED_BUILTIN, LOW); // tern on
 
   // actions with display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C
@@ -115,7 +116,7 @@ void setup ( void ) {
   display.println(0xDEADBEEF, HEX);
   display.display();
 
-  bme.begin(0x76);
+  bme.begin(0x76); // I2C adr.
   rtc.begin();
   if (rtc.lostPower()) {
     Serial.println(" --- RTC lost power, lets set the time! --- ");
@@ -141,6 +142,8 @@ void setup ( void ) {
 
   server.begin();
   Serial.println("HTTPS server started");
+
+  digitalWrite (LED_BUILTIN, HIGH); // tern off
 }
 
 /*__________________________________________________________LOOP__________________________________________________________*/
@@ -158,21 +161,26 @@ void loop (void) {
     sensorsRequest = currentMillis;
 
     writeSensorsDataTotheFiles(); // write data to .csv files
+    
+  } else if (bootUp) {
+    writeSensorsDataTotheFiles(); // write on boot up (power On)
+    bootUp = false;
   }
 
   if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensers every 'period'
     sensorsUpdateMillis = currentMillis;
-    
-    if (wifiMulti.run() == WL_DISCONNECTED) { // reconnect to better or new Wifi point
+
+    if (wifiMulti.run() == WL_DISCONNECTED) { // reconnect to new Wifi point
       startWiFi();                            // and you do't need to do it at avery CPU tact - so it here
     }
 
     t = bme.readTemperature();
     h = bme.readHumidity();
-    a = gasSensor.getCorrectedPPM(t, h);
-    //float zero = gasSensor.getRZero(); // check 'zero' and set you personal number in the MQ135 library
+    //a = gasSensor.getPPM();               // normal
+    a = gasSensor.getCorrectedPPM(t, h);    // corrected
+    //float zero = gasSensor.getRZero();    // check 'zero' and set you personal number in the MQ135 library
     //Serial.println("gas: " + (String)a + " zero: " + (String)zero);
-    p = bme.readPressure() * 0.0075006;   // to 'mmHg'
+    p = bme.readPressure() * 0.0075006;     // to 'mmHg'
 
     displayYourStaff();     // show collected data
   }
@@ -220,7 +228,9 @@ void startOTA() {     // Start the OTA service
     Serial.println("\r\nEnd");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    digitalWrite (LED_BUILTIN, LOW); // tern on
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+    digitalWrite (LED_BUILTIN, HIGH); // tern off
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
@@ -270,15 +280,15 @@ void startServer() {      // Start a HTTP server with a file read handler and an
 /*__________________________________________________________SERVER_HANDLERS__________________________________________________________*/
 
 void handleNotFound() {     // if the requested file or page doesn't exist, return a 404 not found error
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
   if (!handleFileRead(server.uri())) {      // check if the file exists in the flash memory (SPIFFS), if so, send it
     server.send(404, "text/plain", "404: File Not Found");
   }
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 bool handleFileRead(String path) { // send the right file to the client (if it exists)
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
   Serial.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
   String contentType = getContentType(path);             // Get the MIME type
@@ -293,11 +303,12 @@ bool handleFileRead(String path) { // send the right file to the client (if it e
     return true;
   }
   Serial.println(String("\tFile Not Found: ") + path);   // If the file doesn't exist, return false
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
   return false;
 }
 
 void handleFileUpload() { // upload a new file to the SPIFFS
+  digitalWrite (LED_BUILTIN, LOW); // tern on
   HTTPUpload& upload = server.upload();
   String path;
   if (upload.status == UPLOAD_FILE_START) {
@@ -326,6 +337,7 @@ void handleFileUpload() { // upload a new file to the SPIFFS
       server.send(500, "text/plain", "500: couldn't create file");
     }
   }
+  digitalWrite (LED_BUILTIN, HIGH); // tern off
 }
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
@@ -357,6 +369,7 @@ String getContentType(String filename) {      // convert the file extension to t
 }
 
 void tryGetNTPresponse() {
+  digitalWrite (LED_BUILTIN, LOW); // tern on
   WiFi.hostByName(ntpServerName, timeServerIP); // Get the IP address of the NTP server
   Serial.println("Time server IP:\t" + (String)timeServerIP);
   sendNTPpacket(timeServerIP);
@@ -386,6 +399,7 @@ void tryGetNTPresponse() {
     Serial.flush();
     ESP.reset();
   }
+  digitalWrite (LED_BUILTIN, HIGH); // tern off
 }
 
 unsigned long getTime() { // Check if the time server has responded, if so, get the UNIX time, otherwise, return 0
@@ -432,7 +446,7 @@ void sendNTPpacket(IPAddress& address) {
 
 void displayYourStaff() {
   if (show) {   // display: time + temperature + humidity for 5 sec, then Wifi IP + air + pressure for 5 sec
-    RTC();    // display Time
+    RTC();      // display Time
 
     display.setTextSize(2);
     display.println((String)t + " *C");
@@ -460,11 +474,12 @@ void displayYourStaff() {
 }
 
 void writeSensorsDataTotheFiles() {
+  digitalWrite (LED_BUILTIN, LOW); // tern on
   DateTime now = rtc.now();
   uint32_t timeNow = now.unixtime() - 3 * 60 * 60; // minus 3h, TODO: Time Zone Problem !!!
   if (timeNow != 0) {
 
-    showTimeNow();
+    //showTimeNow();  // check time from RTC3231
 
     String t_t = (String)t; // Compare to "nan", to avoid holes in graphics
     if (!t_t.equals("nan")) {
@@ -500,6 +515,7 @@ void writeSensorsDataTotheFiles() {
     sendNTPpacket(timeServerIP);
     delay(10);
   }
+  digitalWrite (LED_BUILTIN, HIGH); // tern off
 }
 
 void RTC() {
@@ -519,13 +535,13 @@ void RTC() {
   display.print(" ");
   display.print(now.hour(), DEC);
   display.print(':');
-  display.print(now.minute(), DEC);
-  display.print(':');
-  display.println(now.second(), DEC);
+  display.println(now.minute(), DEC);
+  //display.print(':');
+  //display.println(now.second(), DEC);
   display.println("");
 }
 
-void showTimeNow() {
+void showTimeNow() {    // check time from RTC3231
   DateTime now = rtc.now();
 
   Serial.print(" since 1970 = ");
