@@ -24,32 +24,32 @@ ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti cl
 ESP8266WebServer server (80);   // ESP8266WebServer server (80) or ESP8266WebServerSecure server (443)
 WebSocketsServer webSocket(81); // create a websocket server on port 81
 
-IPAddress timeServerIP;   // 129.6.15.27 The time.nist.gov NTP server's IP address
-unsigned int localPort = 123; // 123 or 2390
+IPAddress timeServerIP;         // 129.6.15.27 The time.nist.gov NTP server's IP address
+unsigned int localPort = 123;   // 123 or 2390
 const char* ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
 const int NTP_PACKET_SIZE = 48;           // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[NTP_PACKET_SIZE];       // A buffer to hold incoming and outgoing packets
-WiFiUDP UDP;      // Create an instance of the WiFiUDP class to send and receive UDP messages
+WiFiUDP UDP;                    // Create an instance of the WiFiUDP class to send and receive UDP messages
 #define ONE_HOUR 3600000UL
 const unsigned long intervalNTP = ONE_HOUR;       // Update the time every hour
 unsigned long prevNTP = 0;
 unsigned long lastNTPResponse = millis();
-uint32_t timeUNIX = 0;        // The most recent timestamp received from the time server
+uint32_t timeUNIX = 0;          // The most recent timestamp received from the time server
 
 const unsigned long sensorsRequestPeriod = 10 * 60000; // Do a temperature measurement every 10min
 unsigned long sensorsRequest = 0;
 
-const char *ssid_1 = "----";        // set up your own wifi config !
-const char *password_1 = "----";
-const char *ssid_2 = "----";
-const char *password_2 = "----";
+const char *ssid_1 = "suslik9282";      // set up your own wifi config !
+const char *password_1 = "3M0l4@09";
+const char *ssid_2 = "suslik928";
+const char *password_2 = "08022403";
 
-String getContentType(String filename); // SPIFFS
-bool handleFileRead(String path);       // SPIFFS
+String getContentType(String filename);   // SPIFFS
+bool handleFileRead(String path);         // SPIFFS
 File fsUploadFile;      // a File variable to temporarily store the received file
 
 const char *OTAName = "ESP8266";          // A name and a password for the OTA service
-const char *OTAPassword = "----";   // set up your own OTA pass!
+const char *OTAPassword = "espP0v0zdyxy";         // set up your own OTA pass!
 
 const char* mdnsName = "esp8266";         // Domain name for the mDNS responder
 
@@ -103,29 +103,15 @@ void setup ( void ) {
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C
   display.display();
   delay(10);
-  display.clearDisplay(); // Clear the buffer.
-  display.setTextSize(1);
-  display.setTextColor(WHITE);
-  display.setCursor(0, 0);
-  display.println("Hello, world!");
-  display.setTextColor(BLACK, WHITE); // 'inverted' text
-  display.println(3.141592);
+  display.clearDisplay();                     // Clear the buffer.
+  display.setTextColor(WHITE);         // 'inverted' text
   display.setTextSize(2);
-  display.setTextColor(WHITE);
-  display.print("0x");
-  display.println(0xDEADBEEF, HEX);
+  display.setCursor(0, 0);
+  display.println(" inHome");
+  display.println("  weather");
+  display.println("   server");
+  display.println("Loading...");
   display.display();
-
-  bme.begin(0x76); // I2C adr.
-  rtc.begin();
-  if (rtc.lostPower()) {
-    Serial.println(" --- RTC lost power, lets set the time! --- ");
-    // following line sets the RTC to the date & time this sketch was compiled
-    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-  }
 
   startWiFi();      // Start a Wi-Fi access point, and try to connect to some given access points. Then wait for either an AP or STA connection
   startOTA();       // Start the OTA service
@@ -141,7 +127,18 @@ void setup ( void ) {
   delay(10);
 
   server.begin();
-  Serial.println("HTTPS server started");
+  Serial.println("HTTP server started");
+
+  bme.begin(0x76); // I2C adr.
+  rtc.begin();
+  if (rtc.lostPower()) {
+    Serial.println(" --- RTC lost power, lets set the time! --- ");
+    // following line sets the RTC to the date & time this sketch was compiled
+    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
+  }
 
   digitalWrite (LED_BUILTIN, HIGH); // tern off
 }
@@ -161,7 +158,7 @@ void loop (void) {
     sensorsRequest = currentMillis;
 
     writeSensorsDataTotheFiles(); // write data to .csv files
-    
+
   } else if (bootUp) {
     writeSensorsDataTotheFiles(); // write on boot up (power On)
     bootUp = false;
@@ -199,22 +196,22 @@ void startWiFi() {      // Try to connect to some given access points. Then wait
   wifiMulti.addAP(ssid_1, password_1);      // add Wi-Fi networks you want to connect to
   wifiMulti.addAP(ssid_2, password_2);
 
-  Serial.println("Connecting");     // Wait for the Wi-Fi to connect
+  Serial.println("Connecting");                 // Wait for the Wi-Fi to connect
   while (wifiMulti.run() != WL_CONNECTED) {     // wifiMulti.run() or WiFi.status()
     delay(10);
     Serial.print('.');
   }
   Serial.println("\r\n");
   Serial.print("Connected to ");
-  Serial.println(WiFi.SSID());      // Tell us what network we're connected to
+  Serial.println(WiFi.SSID());                  // Tell us what network we're connected to
   Serial.print("IP address:\t");
-  Serial.print(WiFi.localIP());     // Send the IP address of the ESP8266 to the computer
+  Serial.print(WiFi.localIP());                 // Send the IP address of the ESP8266 to the computer
   Serial.println("\r\n");
 }
 
 void startUDP() {
   Serial.println("Starting UDP");
-  UDP.begin(localPort);     // Start listening for UDP messages to port 123
+  UDP.begin(localPort);                         // Start listening for UDP messages to port 123
   Serial.print("Local port:\t");
   Serial.println(UDP.localPort());
 }
@@ -230,9 +227,9 @@ void startOTA() {     // Start the OTA service
     Serial.println("\r\nEnd");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    digitalWrite (LED_BUILTIN, LOW); // tern on
+    digitalWrite (LED_BUILTIN, LOW);            // tern on
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    digitalWrite (LED_BUILTIN, HIGH); // tern off
+    digitalWrite (LED_BUILTIN, HIGH);           // tern off
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
@@ -246,12 +243,12 @@ void startOTA() {     // Start the OTA service
   Serial.println("OTA ready\r\n");
 }
 
-void startSPIFFS() {      // Start the SPI Flash File System (SPIFFS)
+void startSPIFFS() {                            // Start the SPI Flash File System (SPIFFS)
   SPIFFS.begin();
   Serial.println("SPIFFS started. Contents:");
   {
     Dir dir = SPIFFS.openDir("/");
-    while (dir.next()) {      // List the file system contents
+    while (dir.next()) {                        // List the file system contents
       String fileName = dir.fileName();
       size_t fileSize = dir.fileSize();
       Serial.printf("\tFS File: %s, size: %s\r\n", fileName.c_str(), formatBytes(fileSize).c_str());
@@ -260,17 +257,17 @@ void startSPIFFS() {      // Start the SPI Flash File System (SPIFFS)
   }
 }
 
-void startMDNS() {      // Start the mDNS
+void startMDNS() {                              // Start the mDNS
   MDNS.begin(mdnsName);
   Serial.print("mDNS responder started: http://");
   Serial.print(mdnsName);
   Serial.println(".local");
 }
 
-void startServer() {      // Start a HTTP server with a file read handler and an upload handler
-  server.on("/edit.html",  HTTP_POST, []() {      // If a POST request is sent to the /edit.html address,
+void startServer() {                            // Start a HTTP server with a file read handler and an upload handler
+  server.on("/edit.html",  HTTP_POST, []() {    // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
-  }, handleFileUpload);     // go to 'handleFileUpload'
+  }, handleFileUpload);                         // go to 'handleFileUpload'
 
   server.onNotFound(handleNotFound);      // if someone requests any other file or page, go to function 'handleNotFound'
   // and check if the file exists
@@ -289,18 +286,18 @@ void handleNotFound() {     // if the requested file or page doesn't exist, retu
   digitalWrite(LED_BUILTIN, HIGH);
 }
 
-bool handleFileRead(String path) { // send the right file to the client (if it exists)
+bool handleFileRead(String path) {                          // send the right file to the client (if it exists)
   digitalWrite(LED_BUILTIN, LOW);
   Serial.println("handleFileRead: " + path);
-  if (path.endsWith("/")) path += "index.html";          // If a folder is requested, send the index file
-  String contentType = getContentType(path);             // Get the MIME type
+  if (path.endsWith("/")) path += "index.html";             // If a folder is requested, send the index file
+  String contentType = getContentType(path);                // Get the MIME type
   String pathWithGz = path + ".gz";
-  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) { // If the file exists, either as a compressed archive, or normal
-    if (SPIFFS.exists(pathWithGz))                         // If there's a compressed version available
-      path += ".gz";                                         // Use the compressed verion
-    File file = SPIFFS.open(path, "r");                    // Open the file
-    size_t sent = server.streamFile(file, contentType);    // Send it to the client
-    file.close();                                          // Close the file again
+  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {   // If the file exists, either as a compressed archive, or normal
+    if (SPIFFS.exists(pathWithGz))                          // If there's a compressed version available
+      path += ".gz";                                        // Use the compressed verion
+    File file = SPIFFS.open(path, "r");                     // Open the file
+    size_t sent = server.streamFile(file, contentType);     // Send it to the client
+    file.close();                                           // Close the file again
     Serial.println(String("\tSent file: ") + path);
     return true;
   }
@@ -339,12 +336,12 @@ void handleFileUpload() { // upload a new file to the SPIFFS
       server.send(500, "text/plain", "500: couldn't create file");
     }
   }
-  digitalWrite (LED_BUILTIN, HIGH); // tern off
+  digitalWrite (LED_BUILTIN, HIGH);           // tern off
 }
 
 /*__________________________________________________________HELPER_FUNCTIONS__________________________________________________________*/
 
-String formatBytes(size_t bytes) { // convert sizes in bytes to KB and MB
+String formatBytes(size_t bytes) {            // convert sizes in bytes to KB and MB
   if (bytes < 1024) {
     return String(bytes) + "B";
   } else if (bytes < (1024 * 1024)) {
@@ -371,21 +368,21 @@ String getContentType(String filename) {      // convert the file extension to t
 }
 
 void tryGetNTPresponse() {
-  digitalWrite (LED_BUILTIN, LOW); // tern on
+  digitalWrite (LED_BUILTIN, LOW);          // tern on
   WiFi.hostByName(ntpServerName, timeServerIP); // Get the IP address of the NTP server
   Serial.println("Time server IP:\t" + (String)timeServerIP);
   sendNTPpacket(timeServerIP);
 
-  uint32_t time = getTime();      // Check if the time server has responded, if so, get the UNIX time
+  uint32_t time = getTime();                // Check if the time server has responded, if so, get the UNIX time
   if (time) {
     timeUNIX = time;
 
     DateTime now = rtc.now();
-    uint32_t rtcTime = now.unixtime(); // minus 3h
+    uint32_t rtcTime = now.unixtime();      // minus 3h
     if (timeUNIX < rtcTime) {
       Serial.println("RTC ready to Update, Check you Time Zone");
     } else {
-      rtc.adjust(DateTime(timeUNIX)); // synchronize RTC with time Server
+      rtc.adjust(DateTime(timeUNIX));       // synchronize RTC with time Server
       Serial.println("RTC Updated from time.nist.gov !");
       Serial.println("NTP response:\t" + (String)timeUNIX);
       lastNTPResponse = millis();
@@ -401,7 +398,7 @@ void tryGetNTPresponse() {
     Serial.flush();
     ESP.reset();
   }
-  digitalWrite (LED_BUILTIN, HIGH); // tern off
+  digitalWrite (LED_BUILTIN, HIGH);         // tern off
 }
 
 unsigned long getTime() { // Check if the time server has responded, if so, get the UNIX time, otherwise, return 0
@@ -427,28 +424,31 @@ unsigned long getTime() { // Check if the time server has responded, if so, get 
 
 void sendNTPpacket(IPAddress& address) {
   Serial.println("Sending NTP request");
-  memset(packetBuffer, 0, NTP_PACKET_SIZE);  // set all bytes in the buffer to 0
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011;   // LI, Version, Mode
-  packetBuffer[1] = 0;     // Stratum, or type of clock
-  packetBuffer[2] = 6;     // Polling Interval
-  packetBuffer[3] = 0xEC;  // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
+  memset(packetBuffer, 0, NTP_PACKET_SIZE); // set all bytes in the buffer to 0
+                                            // Initialize values needed to form NTP request
+                                            // (see URL above for details on the packets)
+  packetBuffer[0] = 0b11100011;             // LI, Version, Mode
+  packetBuffer[1] = 0;                      // Stratum, or type of clock
+  packetBuffer[2] = 6;                      // Polling Interval
+  packetBuffer[3] = 0xEC;                   // Peer Clock Precision
+                                            // 8 bytes of zero for Root Delay & Root Dispersion
   packetBuffer[12]  = 49;
   packetBuffer[13]  = 0x4E;
   packetBuffer[14]  = 49;
   packetBuffer[15]  = 52;
 
-  // send a packet requesting a timestamp:
-  UDP.beginPacket(address, 123); // NTP requests are to port 123
+                                            // send a packet requesting a timestamp:
+  UDP.beginPacket(address, 123);            // NTP requests are to port 123
   UDP.write(packetBuffer, NTP_PACKET_SIZE);
   UDP.endPacket();
 }
 
 void displayYourStaff() {
+
+  sensorDataError();                        // handle 'nan' data
+
   if (show) {   // display: time + temperature + humidity for 5 sec, then Wifi IP + air + pressure for 5 sec
-    RTC();      // display Time
+    RTC();                                  // display Time
 
     display.setTextSize(2);
     display.println((String)t + " *C");
@@ -461,13 +461,13 @@ void displayYourStaff() {
     display.setTextSize(1);
     display.setCursor(0, 0);
     display.print("IP: ");
-    display.println(WiFi.localIP());  // show IP
+    display.println(WiFi.localIP());        // show IP
     display.println("");
 
     display.setTextSize(2);
-    display.print(a, 1); // round to '.0'
+    display.print(a, 1);                    // round to '.0'
     display.println(" Air");
-    display.print(p, 1); // round from '738.92' to '738.9'
+    display.print(p, 1);                    // round from '738.92' to '738.9'
     display.println(" mmHg");
     display.display();
 
@@ -475,15 +475,27 @@ void displayYourStaff() {
   }
 }
 
+void sensorDataError() {                    // handle 'nan' data
+
+  String ts = (String)t;
+  String hs = (String)h;
+  String ps = (String)p;
+
+  if (ts.equals(hs) && ts.equals(ps)) {     // only 1 chance to be - when "nan"
+    ESP.restart();
+  }
+
+}
+
 void writeSensorsDataTotheFiles() {
-  digitalWrite (LED_BUILTIN, LOW); // tern on
+  digitalWrite (LED_BUILTIN, LOW);          // tern on
   DateTime now = rtc.now();
   uint32_t timeNow = now.unixtime() - 3 * 60 * 60; // minus 3h, TODO: Time Zone Problem !!!
   if (timeNow != 0) {
 
     //showTimeNow();  // check time from RTC3231
 
-    String t_t = (String)t; // Compare to "nan", to avoid holes in graphics
+    String t_t = (String)t;                 // Compare to "nan", to avoid holes in graphics
     if (!t_t.equals("nan")) {
       Serial.printf("Appending temperature to file: %lu,", timeNow);
       Serial.println(t);
@@ -493,27 +505,27 @@ void writeSensorsDataTotheFiles() {
       tempLog.close();
     }
 
-    String h_t = (String)h;   // Compare to "nan", to avoid holes in graphics
+    String h_t = (String)h;                 // Compare to "nan", to avoid holes in graphics
     if (!h_t.equals("nan")) {
       File humLog = SPIFFS.open("/hum.csv", "a");
       humLog.println((String)timeNow + ',' + (String)h);
       humLog.close();
     }
 
-    String air_t = (String)a;   // Compare to "nan", to avoid holes in graphics
+    String air_t = (String)a;               // Compare to "nan", to avoid holes in graphics
     if (!air_t.equals("nan")) {
       File airLog = SPIFFS.open("/air.csv", "a");
       airLog.println((String)timeNow + ',' + (String)a);
       airLog.close();
     }
 
-    String press_t = (String)p;   // Compare to "nan", to avoid holes in graphics
+    String press_t = (String)p;             // Compare to "nan", to avoid holes in graphics
     if (!press_t.equals("nan")) {
       File preLog = SPIFFS.open("/pre.csv", "a");
       preLog.println((String)timeNow + ',' + (String)p);
       preLog.close();
     }
-  } else {      // If we didn't receive an NTP response yet, send another request
+  } else {                                  // If we didn't receive an NTP response yet, send another request
     sendNTPpacket(timeServerIP);
     delay(10);
   }
@@ -531,7 +543,7 @@ void RTC() {
   display.print('/');
   display.print(now.month(), DEC);
   display.print('/');
-  display.print(now.year() - 2000, DEC); // round from '2018' to '18'
+  display.print(now.year() - 2000, DEC);    // round from '2018' to '18'
   display.print(" ");
   display.print(daysOfTheWeek[now.dayOfTheWeek()]);
   display.print(" ");
@@ -543,7 +555,7 @@ void RTC() {
   display.println("");
 }
 
-void showTimeNow() {    // check time from RTC3231
+void showTimeNow() {                        // check time from RTC3231
   DateTime now = rtc.now();
 
   Serial.print(" since 1970 = ");
@@ -564,3 +576,4 @@ void showTimeNow() {    // check time from RTC3231
   Serial.print(now.second(), DEC);
   Serial.println();
 }
+
