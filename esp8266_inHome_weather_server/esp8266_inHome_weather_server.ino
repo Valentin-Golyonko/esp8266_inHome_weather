@@ -23,7 +23,7 @@
 
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
 ESP8266WebServer server (80);   // ESP8266WebServer server (80) or ESP8266WebServerSecure server (443)
-WebSocketsServer webSocket(81); // create a websocket server on port 81
+WebSocketsServer webSocket(81); // create a web socket server on port 81
 
 IPAddress timeServerIP;         // 129.6.15.27 The time.nist.gov NTP server's IP address
 unsigned int localPort = 123;   // 123 or 2390
@@ -82,7 +82,7 @@ MQ135 gasSensor = MQ135(MQ135_PIN);
 RTC_DS3231 rtc;
 char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
-unsigned long sensorsUpdateMillis = 0;    // sensors udate
+unsigned long sensorsUpdateMillis = 0;    // sensors update
 const int sensorsUpdatePeriod = 5000;     // sensors update 5 sec
 
 float a = -1, t = -1, h = -1, p = -1;
@@ -169,7 +169,7 @@ void loop (void) {
     displayYourStaff();                     // show collected data
 
     if (correction_delta) {                 // temperature correction: get delta
-      if (currentMillis >= 600000) {        // temer = 10 min
+      if (currentMillis >= 600000) {        // timer = 10 min
         delta_t = t - t_zero;
         correction_delta = false;
         Serial.println("temperature correction done");
@@ -184,7 +184,7 @@ void loop (void) {
 
   } else if (bootUp) {
     bootUp = false;
-    writeSensorsDataTotheFiles();               // write on boot up (power On)
+    writeSensorsDataTotheFiles();               // write sensor data on boot up (power On) when they are ready
   }
 
   if (currentMillis - wifiReconnectMillis >= wifiReconnectPeriod) {     // update sensors every 'period'
@@ -307,7 +307,7 @@ bool handleFileRead(String path) {                          // send the right fi
   String pathWithGz = path + ".gz";
   if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {   // If the file exists, either as a compressed archive, or normal
     if (SPIFFS.exists(pathWithGz))                          // If there's a compressed version available
-      path += ".gz";                                        // Use the compressed verion
+      path += ".gz";                                        // Use the compressed version
     File file = SPIFFS.open(path, "r");                     // Open the file
     size_t sent = server.streamFile(file, contentType);     // Send it to the client
     file.close();                                           // Close the file again
@@ -580,7 +580,7 @@ void RTC() {
 void showTimeNow() {                        // check time from RTC3231
   DateTime now = rtc.now();
 
-  Serial.print(" since 1970 = " + (String) now.unixtime());                             // unixtime
+  Serial.print(" since 1970 = " + (String) now.unixtime());                             // unix time
   Serial.print((String) now.year() + '/' + (String) now.month() + '/' + (String) now.day());
   Serial.print(" (" + (String) daysOfTheWeek[now.dayOfTheWeek()] + ") ");
   Serial.println((String) now.hour() + ':' + (String) now.minute() + ':' + (String) now.second());
