@@ -1,5 +1,5 @@
-// Sketch uses 349924 bytes (33%) of program storage space. Maximum is 1044464 bytes.
-// Global variables use 38848 bytes (47%) of dynamic memory, leaving 43072 bytes for local variables. Maximum is 81920 bytes.
+// Sketch uses 349988 bytes (33%) of program storage space. Maximum is 1044464 bytes.
+// Global variables use 38808 bytes (47%) of dynamic memory, leaving 43112 bytes for local variables. Maximum is 81920 bytes.
 // "data" holder size = 21,407 bytes
 //
 // Based on https://tttapa.github.io/ESP8266/Chap01%20-%20ESP8266.html
@@ -17,8 +17,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>   // 5 mA
 #include <Adafruit_BME280.h>    // 0.007 mA
-#include <FS.h>                 // set to SPIFFS to MAX before uploading the sketch, 
-// or you will lose all .csv files
+#include <FS.h>                 // set to SPIFFS to MAX before uploading the sketch, or you will lose all .csv files
 #include "RTClib.h"             // 1.781 mA
 //#include <spiffs/spiffs.h>
 
@@ -34,12 +33,15 @@ byte packetBuffer[NTP_PACKET_SIZE];       // A buffer to hold incoming and outgo
 WiFiUDP UDP;                    // Create an instance of the WiFiUDP class to send and receive UDP messages
 #define ONE_HOUR 3600000UL
 const unsigned long intervalNTP = ONE_HOUR;       // Update the time every hour
-unsigned long prevNTP = 0;
+unsigned long prevNTPMillis = 0;
 unsigned long lastNTPResponse = millis();
 uint32_t timeUNIX = 0;          // The most recent timestamp received from the time server
 
-const unsigned long sensorsRequestPeriod = 10 * 60000; // Do a temperature measurement every 10 min
-unsigned long sensorsRequest = 0;
+const unsigned long sensorsRequestPeriod = 600000; // Do a temperature measurement every 10 min
+unsigned long sensorsRequestMillis = 0;
+
+const unsigned long wifiReconnectPeriod = 60000; // Do a temperature measurement every 1 min
+unsigned long wifiReconnectMillis = 0;
 
 const char *ssid_1 = "suslik9282";        // set up your own wifi config !
 const char *password_1 = "3M0l4@09";
@@ -48,14 +50,14 @@ const char *password_2 = "08022403";
 const char *ssid_3 = "AndroidN5";
 const char *password_3 = "valik2403quite";
 
-String getContentType(String filename);   // SPIFFS
-bool handleFileRead(String path);         // SPIFFS
-File fsUploadFile;                        // a File variable to temporarily store the received file
-
 const char *OTAName = "ESP8266";          // A name and a password for the OTA service
 const char *OTAPassword = "espP0v0zdyxy"; // set up your own OTA pass!
 
 const char* mdnsName = "esp8266";         // Domain name for the mDNS responder
+
+String getContentType(String filename);   // SPIFFS
+bool handleFileRead(String path);         // SPIFFS
+File fsUploadFile;                        // a File variable to temporarily store the received file
 
 #define OLED_RESET D4
 Adafruit_SSD1306 display(OLED_RESET);
@@ -146,28 +148,16 @@ void setup ( void ) {
 /*________________________________________LOOP________________________________________*/
 
 void loop (void) {
+
+  ArduinoOTA.handle();      // listen for OTA events
+  server.handleClient();    // run the server
+
   unsigned long currentMillis = millis();
 
-  if (currentMillis - prevNTP > intervalNTP) {  // Request the time from the time server every hour
-    prevNTP = currentMillis;
+  if (currentMillis - prevNTPMillis > intervalNTP) {  // Request the time from the time server every hour
+    prevNTPMillis = currentMillis;
 
     tryGetNTPresponse();                        // work with NTP and try to synchronize RTC with time Server
-  }
-
-  if (currentMillis - sensorsRequest > sensorsRequestPeriod) {
-    sensorsRequest = currentMillis;
-
-    writeSensorsDataTotheFiles();               // write data to .csv files
-
-    if (wifiMulti.run() == WL_DISCONNECTED ||
-        wifiMulti.run() == WL_IDLE_STATUS ||
-        wifiMulti.run() == WL_CONNECT_FAILED) { // reconnect to a new Wifi point
-      startWiFi();
-    }
-  } else if (bootUp) {
-    bootUp = false;
-
-    writeSensorsDataTotheFiles();               // write on boot up (power On)
   }
 
   if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensors every 'period'
@@ -187,8 +177,25 @@ void loop (void) {
     }
   }
 
-  ArduinoOTA.handle();      // listen for OTA events
-  server.handleClient();    // run the server
+  if (currentMillis - sensorsRequestMillis > sensorsRequestPeriod) {
+    sensorsRequestMillis = currentMillis;
+
+    writeSensorsDataTotheFiles();               // write data to .csv files
+
+  } else if (bootUp) {
+    bootUp = false;
+    writeSensorsDataTotheFiles();               // write on boot up (power On)
+  }
+
+  if (currentMillis - wifiReconnectMillis >= wifiReconnectPeriod) {     // update sensors every 'period'
+    wifiReconnectMillis = currentMillis;
+
+    if (wifiMulti.run() == WL_DISCONNECTED ||
+        wifiMulti.run() == WL_IDLE_STATUS ||
+        wifiMulti.run() == WL_CONNECT_FAILED) { // reconnect to a new Wifi point
+      startWiFi();
+    }
+  }
 }
 
 /*________________________________________SETUP_FUNCTIONS________________________________________*/
@@ -468,11 +475,11 @@ void displayYourStaff() {
     RTC();                                  // display Time
 
     display.setTextSize(2);
-    display.println((String)t + " *C");
+    display.println((String) t + " *C");
     display.setTextSize(1);                 // line spacing
     display.println("");
     display.setTextSize(2);
-    display.println((String)h + " %");
+    display.println((String) h + " %");
     display.display();
 
     show = false;
