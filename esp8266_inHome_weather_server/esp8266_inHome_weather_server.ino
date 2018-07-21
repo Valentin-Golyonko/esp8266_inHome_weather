@@ -87,7 +87,7 @@ const int sensorsUpdatePeriod = 5000;     // sensors update 5 sec
 
 float a = -1, t = -1, h = -1, p = -1;
 bool show = true;
-bool bootUp = false;
+bool bootUp = true;
 
 bool correction_t = true;           // temperature correction after 10 min work, because of self heating !
 bool correction_delta = true;
@@ -162,9 +162,13 @@ void loop (void) {
 
   if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensors every 'period'
     sensorsUpdateMillis = currentMillis;
-    bootUp = true;
 
     sensorData();                           // get sensors data
+
+    if (bootUp) {
+      bootUp = false;
+      writeSensorsDataTotheFiles();         // write sensor data on boot up (power On) when they are ready
+    }
 
     displayYourStaff();                     // show collected data
 
@@ -181,10 +185,6 @@ void loop (void) {
     sensorsRequestMillis = currentMillis;
 
     writeSensorsDataTotheFiles();               // write data to .csv files
-
-  } else if (bootUp) {
-    bootUp = false;
-    writeSensorsDataTotheFiles();               // write sensor data on boot up (power On) when they are ready
   }
 
   if (currentMillis - wifiReconnectMillis >= wifiReconnectPeriod) {     // update sensors every 'period'
