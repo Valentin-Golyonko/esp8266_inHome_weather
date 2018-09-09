@@ -43,15 +43,15 @@ unsigned long sensorsRequestMillis = 0;
 const unsigned long wifiReconnectPeriod = 60000; // Do a temperature measurement every 1 min
 unsigned long wifiReconnectMillis = 0;
 
-const char *ssid_1 = "suslik9282";        // set up your own wifi config !
-const char *password_1 = "3M0l4@09";
-const char *ssid_2 = "suslik928";
-const char *password_2 = "08022403";
-const char *ssid_3 = "AndroidN5";
-const char *password_3 = "valik2403quite";
+const char *ssid_1 = "xxxx";        // set up your own wifi config !
+const char *password_1 = "xxxx";
+const char *ssid_2 = "xxxx";
+const char *password_2 = "xxxx";
+const char *ssid_3 = "xxxx";
+const char *password_3 = "xxxx";
 
-const char *OTAName = "ESP8266";          // A name and a password for the OTA service
-const char *OTAPassword = "espP0v0zdyxy"; // set up your own OTA pass!
+const char *OTAName = "xxxx";       // A name and a password for the OTA service
+const char *OTAPassword = "xxxx";   // set up your own OTA pass!
 
 const char* mdnsName = "esp8266";         // Domain name for the mDNS responder
 
@@ -95,11 +95,11 @@ float t_zero;
 float delta_t = 0;
 
 static const uint8_t x509[] PROGMEM = {   // The certificate is stored in PMEM
-  0x30, 0xd4                              // set up your own security certificate!
+  0x30, 0xd4
 };
 
-static const uint8_t rsakey[] PROGMEM = {   // And so is the key.  These could also be in DRAM
-  0x30, 0x3f                                // set up your own security key!
+static const uint8_t rsakey[] PROGMEM = { // And so is the key.  These could also be in DRAM
+  0x30, 0x3f
 };
 
 void setup ( void ) {
@@ -556,25 +556,42 @@ void writeSensorsDataTotheFiles() {
 
 void RTC() {
   DateTime now = rtc.now();
+  String rtc_day = ifTimeNumber10(now.day());
+  String rtc_month = ifTimeNumber10(now.month());
+  String rtc_year = ifTimeNumber10(now.year() - 2000);  // round from '2018' to '18'
+  String rtc_hour = ifTimeNumber10(now.hour());
+  String rtc_minute = ifTimeNumber10(now.minute());
 
   display.clearDisplay();
   display.setTextSize(1);
   display.setCursor(0, 0);
 
-  display.print(now.day());
+  display.print(rtc_day);
   display.print('/');
-  display.print(now.month());
+  display.print(rtc_month);
   display.print('/');
-  display.print(now.year() - 2000);    // round from '2018' to '18'
+  display.print(rtc_year);
   display.print(" ");
   display.print(daysOfTheWeek[now.dayOfTheWeek()]);
   display.print(" ");
-  display.print(now.hour());
+  display.print(rtc_hour);
   display.print(':');
-  display.println(now.minute());
+  display.println(rtc_minute);
   //display.print(':');
   //display.println(now.second());
   display.println("");
+}
+
+String ifTimeNumber10(int number) {
+  String s = "";
+
+  if (number < 10) {
+    s = "0" + (String) number;
+  } else {
+    s = (String) number;
+  }
+
+  return s;
 }
 
 void showTimeNow() {                        // check time from RTC3231
