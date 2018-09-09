@@ -1,5 +1,5 @@
-// Sketch uses 349988 bytes (33%) of program storage space. Maximum is 1044464 bytes.
-// Global variables use 38808 bytes (47%) of dynamic memory, leaving 43112 bytes for local variables. Maximum is 81920 bytes.
+// Sketch uses 354320 bytes (33%) of program storage space. Maximum is 1044464 bytes.
+// Global variables use 34748 bytes (42%) of dynamic memory, leaving 47172 bytes for local variables. Maximum is 81920 bytes.
 // "data" holder size = 21,407 bytes
 //
 // Based on https://tttapa.github.io/ESP8266/Chap01%20-%20ESP8266.html
@@ -21,13 +21,15 @@
 #include "RTClib.h"             // 1.781 mA
 //#include <spiffs/spiffs.h>
 
+#include "hf.h"
+
 ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-ESP8266WebServer server (80);   // ESP8266WebServer server (80) or ESP8266WebServerSecure server (443)
+ESP8266WebServer server(80);    // ESP8266WebServer server (80) or ESP8266WebServerSecure server (443)
 WebSocketsServer webSocket(81); // create a web socket server on port 81
 
 IPAddress timeServerIP;         // 129.6.15.27 The time.nist.gov NTP server's IP address
 unsigned int localPort = 123;   // 123 or 2390
-const char* ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
+const char *ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
 const int NTP_PACKET_SIZE = 48;           // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[NTP_PACKET_SIZE];       // A buffer to hold incoming and outgoing packets
 WiFiUDP UDP;                    // Create an instance of the WiFiUDP class to send and receive UDP messages
@@ -40,7 +42,7 @@ uint32_t timeUNIX = 0;          // The most recent timestamp received from the t
 const unsigned long sensorsRequestPeriod = 600000; // Do a temperature measurement every 10 min
 unsigned long sensorsRequestMillis = 0;
 
-const unsigned long wifiReconnectPeriod = 60000; // Do a temperature measurement every 1 min
+const unsigned long wifiReconnectPeriod = 60000;
 unsigned long wifiReconnectMillis = 0;
 
 const char *ssid_1 = "xxxx";        // set up your own wifi config !
@@ -53,7 +55,7 @@ const char *password_3 = "xxxx";
 const char *OTAName = "xxxx";       // A name and a password for the OTA service
 const char *OTAPassword = "xxxx";   // set up your own OTA pass!
 
-const char* mdnsName = "esp8266";         // Domain name for the mDNS responder
+const char *mdnsName = "esp8266";         // Domain name for the mDNS responder
 
 String getContentType(String filename);   // SPIFFS
 bool handleFileRead(String path);         // SPIFFS
@@ -94,21 +96,23 @@ bool correction_delta = true;
 float t_zero;
 float delta_t = 0;
 
-static const uint8_t x509[] PROGMEM = {   // The certificate is stored in PMEM
-  0x30, 0xd4
+static const uint8_t x509[]
+PROGMEM = {   // The certificate is stored in PMEM
+  0x30, 0xd4                              // set up your own security certificate!
 };
 
-static const uint8_t rsakey[] PROGMEM = { // And so is the key.  These could also be in DRAM
-  0x30, 0x3f
+static const uint8_t rsakey[]
+PROGMEM = { // And so is the key.  These could also be in DRAM
+  0x30, 0x3f                              // set up your own security certificate!
 };
 
-void setup ( void ) {
+void setup(void) {
 
   Serial.begin(115200);
   delay(10);
   Serial.println('\r\n');
   pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite (LED_BUILTIN, LOW);    // tern on
+  digitalWrite(LED_BUILTIN, LOW);    // tern on
 
   // actions with display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C
@@ -142,12 +146,12 @@ void setup ( void ) {
   startUDP();           // Start listening for UDP messages to port 123
   tryGetNTPresponse();  // connect to a NTP server
 
-  digitalWrite (LED_BUILTIN, HIGH); // tern off
+  digitalWrite(LED_BUILTIN, HIGH); // tern off
 }
 
 /*________________________________________LOOP________________________________________*/
 
-void loop (void) {
+void loop(void) {
 
   ArduinoOTA.handle();      // listen for OTA events
   server.handleClient();    // run the server
@@ -166,6 +170,8 @@ void loop (void) {
     sensorData();                           // get sensors data
 
     if (bootUp) {
+      sensorDataError(t, h, p);             // handle 'nan' data at first boot
+
       bootUp = false;
       writeSensorsDataTotheFiles();         // write sensor data on boot up (power On) when they are ready
     }
@@ -238,9 +244,9 @@ void startOTA() {     // Start the OTA service
     Serial.println("\r\nEnd");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    digitalWrite (LED_BUILTIN, LOW);            // tern on
+    digitalWrite(LED_BUILTIN, LOW);            // tern on
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    digitalWrite (LED_BUILTIN, HIGH);           // tern off
+    digitalWrite(LED_BUILTIN, HIGH);           // tern off
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
@@ -279,11 +285,12 @@ void startMDNS() {                              // Start the mDNS
 }
 
 void startServer() {                            // Start a HTTP server with a file read handler and an upload handler
-  server.on("/edit.html",  HTTP_POST, []() {    // If a POST request is sent to the /edit.html address,
+  server.on("/edit.html", HTTP_POST, []() {    // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
   }, handleFileUpload);                         // go to 'handleFileUpload'
 
-  server.onNotFound(handleNotFound);            // if someone requests any other file or page, go to function 'handleNotFound'
+  server.onNotFound(
+    handleNotFound);            // if someone requests any other file or page, go to function 'handleNotFound'
   // and check if the file exists
   server.begin();                               // start the HTTP server
   Serial.println("HTTP server started.");
@@ -305,7 +312,8 @@ bool handleFileRead(String path) {                          // send the right fi
   if (path.endsWith("/")) path += "index.html";             // If a folder is requested, send the index file
   String contentType = getContentType(path);                // Get the MIME type
   String pathWithGz = path + ".gz";
-  if (SPIFFS.exists(pathWithGz) || SPIFFS.exists(path)) {   // If the file exists, either as a compressed archive, or normal
+  if (SPIFFS.exists(pathWithGz) ||
+      SPIFFS.exists(path)) {   // If the file exists, either as a compressed archive, or normal
     if (SPIFFS.exists(pathWithGz))                          // If there's a compressed version available
       path += ".gz";                                        // Use the compressed version
     File file = SPIFFS.open(path, "r");                     // Open the file
@@ -320,19 +328,22 @@ bool handleFileRead(String path) {                          // send the right fi
 }
 
 void handleFileUpload() { // upload a new file to the SPIFFS
-  digitalWrite (LED_BUILTIN, LOW);                        // tern on
-  HTTPUpload& upload = server.upload();
+  digitalWrite(LED_BUILTIN, LOW);                        // tern on
+  HTTPUpload &upload = server.upload();
   String path;
   if (upload.status == UPLOAD_FILE_START) {
     path = upload.filename;
     if (!path.startsWith("/")) path = "/" + path;
-    if (!path.endsWith(".gz")) {                         // The file server always prefers a compressed version of a file
-      String pathWithGz = path + ".gz";                  // So if an uploaded file is not compressed, the existing compressed
+    if (!path.endsWith(
+          ".gz")) {                         // The file server always prefers a compressed version of a file
+      String pathWithGz =
+        path + ".gz";                  // So if an uploaded file is not compressed, the existing compressed
       if (SPIFFS.exists(pathWithGz))                     // version of that file must be deleted (if it exists)
         SPIFFS.remove(pathWithGz);
     }
     Serial.println("handleFileUpload Name: " + (String) path);
-    fsUploadFile = SPIFFS.open(path, "w");               // Open the file for writing in SPIFFS (create if it doesn't exist)
+    fsUploadFile = SPIFFS.open(path,
+                               "w");               // Open the file for writing in SPIFFS (create if it doesn't exist)
     path = String();
   } else if (upload.status == UPLOAD_FILE_WRITE) {
     if (fsUploadFile)
@@ -347,20 +358,11 @@ void handleFileUpload() { // upload a new file to the SPIFFS
       server.send(500, "text/plain", "500: couldn't create file");
     }
   }
-  digitalWrite (LED_BUILTIN, HIGH);           // tern off
+  digitalWrite(LED_BUILTIN, HIGH);           // tern off
 }
 
 /*________________________________________HELPER_FUNCTIONS________________________________________*/
 
-String formatBytes(size_t bytes) {            // convert sizes in bytes to KB and MB
-  if (bytes < 1024) {
-    return String(bytes) + "B";
-  } else if (bytes < (1024 * 1024)) {
-    return String(bytes / 1024.0) + "KB";
-  } else if (bytes < (1024 * 1024 * 1024)) {
-    return String(bytes / 1024.0 / 1024.0) + "MB";
-  }
-}
 
 String getContentType(String filename) {      // convert the file extension to the MIME type
   if (filename.endsWith(".htm")) return "text/html";
@@ -379,7 +381,7 @@ String getContentType(String filename) {      // convert the file extension to t
 }
 
 void tryGetNTPresponse() {
-  digitalWrite (LED_BUILTIN, LOW);          // tern on
+  digitalWrite(LED_BUILTIN, LOW);          // tern on
   WiFi.hostByName(ntpServerName, timeServerIP); // Get the IP address of the NTP server
   Serial.print("Time server IP:\t");
   Serial.println(timeServerIP);
@@ -407,7 +409,7 @@ void tryGetNTPresponse() {
     //Serial.flush();
     //ESP.reset();
   }
-  digitalWrite (LED_BUILTIN, HIGH);         // tern off
+  digitalWrite(LED_BUILTIN, HIGH);         // tern off
 }
 
 unsigned long getTime() {   // Check if the time server has responded, if so, get the UNIX time, otherwise, return 0
@@ -429,7 +431,7 @@ unsigned long getTime() {   // Check if the time server has responded, if so, ge
   return UNIXTime;
 }
 
-void sendNTPpacket(IPAddress& address) {
+void sendNTPpacket(IPAddress &address) {
   Serial.println("Sending NTP request");
   memset(packetBuffer, 0, NTP_PACKET_SIZE); // set all bytes in the buffer to 0
   // Initialize values needed to form NTP request
@@ -439,10 +441,10 @@ void sendNTPpacket(IPAddress& address) {
   packetBuffer[2] = 6;                      // Polling Interval
   packetBuffer[3] = 0xEC;                   // Peer Clock Precision
   // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12]  = 49;
-  packetBuffer[13]  = 0x4E;
-  packetBuffer[14]  = 49;
-  packetBuffer[15]  = 52;
+  packetBuffer[12] = 49;
+  packetBuffer[13] = 0x4E;
+  packetBuffer[14] = 49;
+  packetBuffer[15] = 52;
 
   // send a packet requesting a timestamp:
   UDP.beginPacket(address, 123);            // NTP requests are to port 123
@@ -468,8 +470,6 @@ void sensorData() {
 }
 
 void displayYourStaff() {
-
-  sensorDataError();                        // handle 'nan' data at first boot
 
   if (show) {   // display: time + temperature + humidity for 5 sec, then Wifi IP + air + pressure for 5 sec
     RTC();                                  // display Time
@@ -505,47 +505,37 @@ void displayYourStaff() {
   }
 }
 
-void sensorDataError() {                    // handle 'nan' data at first boot -
-  String ts = (String)t;                    // some data initialization bug
-  String hs = (String)h;
-  String ps = (String)p;
-
-  if (ts.equals(hs) && hs.equals(ps) && ps.equals(ts)) {     // only 1 chance to be - when "nan"
-    ESP.restart();
-  }
-}
-
 void writeSensorsDataTotheFiles() {
   DateTime now = rtc.now();
   uint32_t timeNow = now.unixtime() - 3 * 60 * 60; // minus 3h, TODO: Time Zone Problem !!!
   if (timeNow != 0) {
     //showTimeNow();  // check time from RTC3231
 
-    String t_t = (String)t;                 // Compare to "nan", to avoid holes in the graphic
+    String t_t = (String) t;                 // Compare to "nan", to avoid holes in the graphic
     if (!t_t.equals("nan")) {
       File tempLog = SPIFFS.open("/tempr.csv", "a");  // Write the time and the temperature to the csv file
-      tempLog.println((String)timeNow + ',' + (String)t);
+      tempLog.println((String) timeNow + ',' + (String) t);
       tempLog.close();
     }
 
-    String h_t = (String)h;                 // Compare to "nan", to avoid holes in the graphic
+    String h_t = (String) h;
     if (!h_t.equals("nan")) {
       File humLog = SPIFFS.open("/hum.csv", "a");
-      humLog.println((String)timeNow + ',' + (String)h);
+      humLog.println((String) timeNow + ',' + (String) h);
       humLog.close();
     }
 
-    String air_t = (String)a;               // Compare to "nan", to avoid holes in the graphic
+    String air_t = (String) a;
     if (!air_t.equals("nan")) {
       File airLog = SPIFFS.open("/air.csv", "a");
-      airLog.println((String)timeNow + ',' + (String)a);
+      airLog.println((String) timeNow + ',' + (String) a);
       airLog.close();
     }
 
-    String press_t = (String)p;             // Compare to "nan", to avoid holes in the graphic
+    String press_t = (String) p;
     if (!press_t.equals("nan")) {
       File preLog = SPIFFS.open("/pre.csv", "a");
-      preLog.println((String)timeNow + ',' + (String)p);
+      preLog.println((String) timeNow + ',' + (String) p);
       preLog.close();
     }
   } else {                                  // If we didn't receive an NTP response yet, send another request
@@ -580,18 +570,6 @@ void RTC() {
   //display.print(':');
   //display.println(now.second());
   display.println("");
-}
-
-String ifTimeNumber10(int number) {
-  String s = "";
-
-  if (number < 10) {
-    s = "0" + (String) number;
-  } else {
-    s = (String) number;
-  }
-
-  return s;
 }
 
 void showTimeNow() {                        // check time from RTC3231

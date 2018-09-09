@@ -167,6 +167,7 @@ function drawChartTempr() {
     data.addRows(dataArrayTempr);
 
     var options = {
+		title: "Temperature (Celsius)",
         curveType: 'function',
         height: 380,
         legend: { position: 'none' },
@@ -188,9 +189,6 @@ function drawChartTempr() {
                     minutes: { format: ['HH:mm a Z', ':mm'] }
                 }
             }
-        },
-        vAxis: {
-            title: "Temperature (Celsius)"
         }
     };
 
@@ -208,6 +206,7 @@ function drawChartHum() {
     data.addRows(dataArrayHum);
 
     var options = {
+		title: "Humidity (%)",
         curveType: 'function',
         height: 380,
         legend: { position: 'none' },
@@ -229,9 +228,6 @@ function drawChartHum() {
                     minutes: { format: ['HH:mm a Z', ':mm'] }
                 }
             }
-        },
-        vAxis: {
-            title: "Humidity (%)"
         }
     };
 
@@ -249,6 +245,7 @@ function drawChartAir() {
     data.addRows(dataArrayAir);
 
     var options = {
+		title: "Air quality (ppm)",
         curveType: 'function',
         height: 380,
         legend: { position: 'none' },
@@ -270,9 +267,6 @@ function drawChartAir() {
                     minutes: { format: ['HH:mm a Z', ':mm'] }
                 }
             }
-        },
-        vAxis: {
-            title: "Air quality (ppm)"
         }
     };
 
@@ -290,6 +284,7 @@ function drawChartPre() {
     data.addRows(dataArrayPre);
 
     var options = {
+		title: "Pressure (mmHg)",
         curveType: 'function',
         height: 380,
         legend: { position: 'none' },
@@ -311,9 +306,6 @@ function drawChartPre() {
                     minutes: { format: ['HH:mm a Z', ':mm'] }
                 }
             }
-        },
-        vAxis: {
-            title: "Pressure (mmHg)"
         }
     };
 
