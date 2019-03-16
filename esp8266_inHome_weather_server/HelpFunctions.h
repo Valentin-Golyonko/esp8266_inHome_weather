@@ -1,4 +1,3 @@
-// helper functions
 
 String formatBytes(size_t bytes) {            // convert sizes in bytes to KB and MB
   if (bytes < 1024) {
