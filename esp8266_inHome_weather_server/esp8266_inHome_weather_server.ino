@@ -1,110 +1,17 @@
-// Sketch uses 354320 bytes (33%) of program storage space. Maximum is 1044464 bytes.
-// Global variables use 34748 bytes (42%) of dynamic memory, leaving 47172 bytes for local variables. Maximum is 81920 bytes.
+// Made by https://github.com/Valentin-Golyonko. Apache License 2.0.
+//
+// Sketch uses 387452 bytes (37%) of program storage space. Maximum is 1044464 bytes.
+// Global variables use 33024 bytes (40%) of dynamic memory,
+// leaving 48896 bytes for local variables. Maximum is 81920 bytes.
+//
 // "data" holder size = 21,407 bytes
 //
 // Based on https://tttapa.github.io/ESP8266/Chap01%20-%20ESP8266.html
 
-#include <ESP8266WiFi.h>
-#include <ESP8266WiFiMulti.h>
-#include <WiFiClient.h>
-#include <ESP8266WebServer.h>   // ESP8266WebServer or ESP8266WebServerSecure
-#include <ESP8266mDNS.h>
-#include <WiFiUdp.h>
-#include <ArduinoOTA.h>
-#include <WebSocketsServer.h>
-#include <Wire.h>
-#include <MQ135.h>              // 83.4 mA, RZERO = 230.00
-#include <Adafruit_GFX.h>
-#include <Adafruit_SSD1306.h>   // 5 mA
-#include <Adafruit_BME280.h>    // 0.007 mA
-#include <FS.h>                 // set to SPIFFS to MAX before uploading the sketch, or you will lose all .csv files
-#include "RTClib.h"             // 1.781 mA
-//#include <spiffs/spiffs.h>
-
-#include "hf.h"
-
-ESP8266WiFiMulti wifiMulti;     // Create an instance of the ESP8266WiFiMulti class, called 'wifiMulti'
-ESP8266WebServer server(80);    // ESP8266WebServer server (80) or ESP8266WebServerSecure server (443)
-WebSocketsServer webSocket(81); // create a web socket server on port 81
-
-IPAddress timeServerIP;         // 129.6.15.27 The time.nist.gov NTP server's IP address
-unsigned int localPort = 123;   // 123 or 2390
-const char *ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
-const int NTP_PACKET_SIZE = 48;           // NTP time stamp is in the first 48 bytes of the message
-byte packetBuffer[NTP_PACKET_SIZE];       // A buffer to hold incoming and outgoing packets
-WiFiUDP UDP;                    // Create an instance of the WiFiUDP class to send and receive UDP messages
-#define ONE_HOUR 3600000UL
-const unsigned long intervalNTP = ONE_HOUR;       // Update the time every hour
-unsigned long prevNTPMillis = 0;
-unsigned long lastNTPResponse = millis();
-uint32_t timeUNIX = 0;          // The most recent timestamp received from the time server
-
-const unsigned long sensorsRequestPeriod = 600000; // Do a temperature measurement every 10 min
-unsigned long sensorsRequestMillis = 0;
-
-const unsigned long wifiReconnectPeriod = 60000;
-unsigned long wifiReconnectMillis = 0;
-
-const char *ssid_1 = "xxxx";        // set up your own wifi config !
-const char *password_1 = "xxxx";
-const char *ssid_2 = "xxxx";
-const char *password_2 = "xxxx";
-const char *ssid_3 = "xxxx";
-const char *password_3 = "xxxx";
-
-const char *OTAName = "xxxx";       // A name and a password for the OTA service
-const char *OTAPassword = "xxxx";   // set up your own OTA pass!
-
-const char *mdnsName = "esp8266";         // Domain name for the mDNS responder
-
-String getContentType(String filename);   // SPIFFS
-bool handleFileRead(String path);         // SPIFFS
-File fsUploadFile;                        // a File variable to temporarily store the received file
-
-#define OLED_RESET D4
-Adafruit_SSD1306 display(OLED_RESET);
-
-#define NUMFLAKES 10
-#define XPOS 0
-#define YPOS 1
-#define DELTAY 2
-
-#define LOGO16_GLCD_HEIGHT 16
-#define LOGO16_GLCD_WIDTH  16
-
-#if (SSD1306_LCDHEIGHT != 64)
-#error("Height incorrect, please fix Adafruit_SSD1306.h!");
-#endif
-
-Adafruit_BME280 bme;
-
-#define MQ135_PIN A0
-MQ135 gasSensor = MQ135(MQ135_PIN);
-
-RTC_DS3231 rtc;
-char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
-
-unsigned long sensorsUpdateMillis = 0;    // sensors update
-const int sensorsUpdatePeriod = 5000;     // sensors update 5 sec
-
-float a = -1, t = -1, h = -1, p = -1;
-bool show = true;
-bool bootUp = true;
-
-bool correction_t = true;           // temperature correction after 10 min work, because of self heating !
-bool correction_delta = true;
-float t_zero;
-float delta_t = 0;
-
-static const uint8_t x509[]
-PROGMEM = {   // The certificate is stored in PMEM
-  0x30, 0xd4                              // set up your own security certificate!
-};
-
-static const uint8_t rsakey[]
-PROGMEM = { // And so is the key.  These could also be in DRAM
-  0x30, 0x3f                              // set up your own security certificate!
-};
+#include "HelpFunctions.h"
+#include "Constants.h"
+#include "Initialisation.h"
+#include "NTP.h"
 
 void setup(void) {
 
@@ -127,16 +34,8 @@ void setup(void) {
 
   delay(10);
 
-  bme.begin(0x76);  // I2C adr.
+  bme.begin(0x76);      // I2C adr.
   rtc.begin();
-  /*if (rtc.lostPower()) {
-    Serial.println(" --- RTC lost power, lets set the time! --- ");
-    // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    // This line sets the RTC with an explicit date & time, for example to set
-    // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2014, 1, 21, 3, 0, 0));
-    }*/
 
   startWiFi();          // Start a Wi-Fi access point, and try to connect to some given access points.
   startOTA();           // Start the OTA service
@@ -150,48 +49,12 @@ void setup(void) {
 }
 
 /*________________________________________LOOP________________________________________*/
-
 void loop(void) {
 
   ArduinoOTA.handle();      // listen for OTA events
   server.handleClient();    // run the server
 
   unsigned long currentMillis = millis();
-
-  if (currentMillis - prevNTPMillis > intervalNTP) {  // Request the time from the time server every hour
-    prevNTPMillis = currentMillis;
-
-    tryGetNTPresponse();                        // work with NTP and try to synchronize RTC with time Server
-  }
-
-  if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensors every 'period'
-    sensorsUpdateMillis = currentMillis;
-
-    sensorData();                           // get sensors data
-
-    if (bootUp) {
-      sensorDataError(t, h, p);             // handle 'nan' data at first boot
-
-      bootUp = false;
-      writeSensorsDataTotheFiles();         // write sensor data on boot up (power On) when they are ready
-    }
-
-    displayYourStaff();                     // show collected data
-
-    if (correction_delta) {                 // temperature correction: get delta
-      if (currentMillis >= 600000) {        // timer = 10 min
-        delta_t = t - t_zero;
-        correction_delta = false;
-        Serial.println("temperature correction done");
-      }
-    }
-  }
-
-  if (currentMillis - sensorsRequestMillis > sensorsRequestPeriod) {
-    sensorsRequestMillis = currentMillis;
-
-    writeSensorsDataTotheFiles();               // write data to .csv files
-  }
 
   if (currentMillis - wifiReconnectMillis >= wifiReconnectPeriod) {     // update sensors every 'period'
     wifiReconnectMillis = currentMillis;
@@ -202,6 +65,45 @@ void loop(void) {
       startWiFi();
     }
   }
+
+  if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensors every 'period'
+    sensorsUpdateMillis = currentMillis;
+
+    sensorData();                           // get sensors data
+
+    if (correction_delta) {                 // temperature correction: get delta
+      if (currentMillis >= 600000) {        // timer = 10 min
+        delta_t = t - t_zero;
+        correction_delta = false;
+        Serial.println("temperature correction done");
+      }
+    }
+  } else if (first_power_on) {
+    sensorData();
+    sensorDataError(t, h, p);             // handle 'nan' data at first boot
+    displayYourStaff();                   // show collected data
+    
+    first_power_on = false;
+    writeSensorsDataTotheFiles();         // write sensor data on boot up (power On) when they are ready
+  }
+
+  if (currentMillis - lcd_update_Millis > lcd_update_period) {
+    lcd_update_Millis = currentMillis;
+    
+    displayYourStaff();                   // show collected data
+  }
+
+  if (currentMillis - sensorsRequestMillis > sensorsRequestPeriod) {
+    sensorsRequestMillis = currentMillis;
+
+    writeSensorsDataTotheFiles();         // write data to .csv files
+  }
+
+  if (currentMillis - prevNTPMillis > intervalNTP) {  // Request the time from the time server every hour
+    prevNTPMillis = currentMillis;
+
+    tryGetNTPresponse();                        // work with NTP and try to synchronize RTC with time Server
+  }
 }
 
 /*________________________________________SETUP_FUNCTIONS________________________________________*/
@@ -209,9 +111,10 @@ void loop(void) {
 void startWiFi() {      // Try to connect to some given access points. Then wait for a connection
   WiFi.mode(WIFI_STA);
   //WiFi.begin(ssid, password);
+  wifiMulti.addAP(ssid_3, password_3);
+  wifiMulti.addAP(ssid_4, password_4);
   wifiMulti.addAP(ssid_1, password_1);      // add Wi-Fi networks you want to connect to
   wifiMulti.addAP(ssid_2, password_2);
-  wifiMulti.addAP(ssid_3, password_3);
 
   Serial.println("Connecting...");                // Wait for the Wi-Fi to connect
   wifiMulti.run();                                // wifiMulti.run() or WiFi.status()
@@ -289,8 +192,7 @@ void startServer() {                            // Start a HTTP server with a fi
     server.send(200, "text/plain", "");
   }, handleFileUpload);                         // go to 'handleFileUpload'
 
-  server.onNotFound(
-    handleNotFound);            // if someone requests any other file or page, go to function 'handleNotFound'
+  server.onNotFound(handleNotFound);            // if someone requests any other file or page, go to function 'handleNotFound'
   // and check if the file exists
   server.begin();                               // start the HTTP server
   Serial.println("HTTP server started.");
@@ -363,7 +265,6 @@ void handleFileUpload() { // upload a new file to the SPIFFS
 
 /*________________________________________HELPER_FUNCTIONS________________________________________*/
 
-
 String getContentType(String filename) {      // convert the file extension to the MIME type
   if (filename.endsWith(".htm")) return "text/html";
   else if (filename.endsWith(".html")) return "text/html";
@@ -378,78 +279,6 @@ String getContentType(String filename) {      // convert the file extension to t
   else if (filename.endsWith(".zip")) return "application/x-zip";
   else if (filename.endsWith(".gz")) return "application/x-gzip";
   return "text/plain";
-}
-
-void tryGetNTPresponse() {
-  digitalWrite(LED_BUILTIN, LOW);          // tern on
-  WiFi.hostByName(ntpServerName, timeServerIP); // Get the IP address of the NTP server
-  Serial.print("Time server IP:\t");
-  Serial.println(timeServerIP);
-
-  sendNTPpacket(timeServerIP);
-
-  uint32_t time = getTime();                // Check if the time server has responded, if so, get the UNIX time
-  if (time) {
-    timeUNIX = time;
-
-    DateTime now = rtc.now();
-    uint32_t rtcTime = now.unixtime();      // minus 3h
-    if (timeUNIX < rtcTime) {
-      Serial.println("RTC ready to Update, Check you Time Zone");
-    } else {
-      rtc.adjust(DateTime(timeUNIX));       // synchronize RTC with time Server
-      Serial.println("RTC Updated from\t" + (String) ntpServerName);
-      Serial.println("NTP response:\t" + (String) timeUNIX);
-      lastNTPResponse = millis();
-    }
-  }
-
-  if ((millis() - lastNTPResponse) > 24UL * ONE_HOUR) {
-    Serial.println("More than 24 hours since last NTP response. Rebooting.");
-    //Serial.flush();
-    //ESP.reset();
-  }
-  digitalWrite(LED_BUILTIN, HIGH);         // tern off
-}
-
-unsigned long getTime() {   // Check if the time server has responded, if so, get the UNIX time, otherwise, return 0
-  int cb = UDP.parsePacket();
-  if (!cb) {                               // If there's no response (yet)
-    Serial.println("no packet yet");
-    return 0;
-  }
-  Serial.println("packet received, length=" + (String) cb);
-  UDP.read(packetBuffer, NTP_PACKET_SIZE);      // read the packet into the buffer
-
-  // Combine the 4 timestamp bytes into one 32-bit number
-  uint32_t NTPTime = (packetBuffer[40] << 24) | (packetBuffer[41] << 16) | (packetBuffer[42] << 8) | packetBuffer[43];
-  // Convert NTP time to a UNIX timestamp:
-  // Unix time starts on Jan 1 1970. That's 2208988800 seconds in NTP time:
-  const uint32_t seventyYears = 2208988800UL;
-  uint32_t UNIXTime = NTPTime - seventyYears;   // subtract seventy years:
-  Serial.print("UDP NTP UNIXTime: " + (String) UNIXTime);
-  return UNIXTime;
-}
-
-void sendNTPpacket(IPAddress &address) {
-  Serial.println("Sending NTP request");
-  memset(packetBuffer, 0, NTP_PACKET_SIZE); // set all bytes in the buffer to 0
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
-  packetBuffer[0] = 0b11100011;             // LI, Version, Mode
-  packetBuffer[1] = 0;                      // Stratum, or type of clock
-  packetBuffer[2] = 6;                      // Polling Interval
-  packetBuffer[3] = 0xEC;                   // Peer Clock Precision
-  // 8 bytes of zero for Root Delay & Root Dispersion
-  packetBuffer[12] = 49;
-  packetBuffer[13] = 0x4E;
-  packetBuffer[14] = 49;
-  packetBuffer[15] = 52;
-
-  // send a packet requesting a timestamp:
-  UDP.beginPacket(address, 123);            // NTP requests are to port 123
-  UDP.write(packetBuffer, NTP_PACKET_SIZE);
-  UDP.endPacket();
 }
 
 void sensorData() {
@@ -580,4 +409,3 @@ void showTimeNow() {                        // check time from RTC3231
   Serial.print(" (" + (String) daysOfTheWeek[now.dayOfTheWeek()] + ") ");
   Serial.println((String) now.hour() + ':' + (String) now.minute() + ':' + (String) now.second());
 }
-
