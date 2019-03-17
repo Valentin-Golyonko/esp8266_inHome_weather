@@ -20,10 +20,10 @@ const char *OTAPassword = "xxxx";   // set up your own OTA pass!
 const char *mdnsName = "esp8266";                     // Domain name for the mDNS responder
 
 //--- Sensors
-const unsigned long sensorsRequestPeriod = 600000;    // store a date to a file every 10 min
+const unsigned long sensorsRequestPeriod = 60000 * 10;    // store a date to a file every X min
 unsigned long sensorsRequestMillis = 0;
-const unsigned long sensorsUpdatePeriod = 300000;     // sensors update 5 min
-unsigned long sensorsUpdateMillis = 0; 
+const unsigned long sensorsUpdatePeriod = 1000 * 5;     // sensors update X sec
+unsigned long sensorsUpdateMillis = 0;
 
 float a = 0.0f, t = 0.0f, h = 0.0f, p = 0.0f;
 bool show = true;
@@ -35,15 +35,15 @@ float t_zero = 0.0f;
 float delta_t = 0.0f;
 
 //--- LCD
-const unsigned long lcd_update_period = 60000;              // 1 min
+const unsigned long lcd_update_period = 1000 * 5;              // X sec
 unsigned long lcd_update_Millis = 0;
 
 //--- RTC
 char daysOfTheWeek[7][12] = {"Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"};
 
 //--- NTP
-unsigned int localPort = 123;   // 123 or 2390
-const char *ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
+unsigned int localPort = 2390;   // 123 or 2390
+const char* ntpServerName = "time.nist.gov"; // time.nist.gov, time.windows.com, time.google.com
 const int NTP_PACKET_SIZE = 48;           // NTP time stamp is in the first 48 bytes of the message
 byte packetBuffer[NTP_PACKET_SIZE];       // A buffer to hold incoming and outgoing packets
 

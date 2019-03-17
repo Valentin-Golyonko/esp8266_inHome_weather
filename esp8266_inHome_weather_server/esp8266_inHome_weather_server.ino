@@ -15,11 +15,11 @@
 
 void setup(void) {
 
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, HIGH);    // tern on
+  delay(10);
   Serial.begin(115200);
   delay(10);
-  Serial.println('\r\n');
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);    // tern on
 
   // actions with display
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C);  // initialize with the I2C addr 0x3C
@@ -45,7 +45,7 @@ void setup(void) {
   startUDP();           // Start listening for UDP messages to port 123
   tryGetNTPresponse();  // connect to a NTP server
 
-  digitalWrite(LED_BUILTIN, HIGH); // tern off
+  digitalWrite(LED_BUILTIN, LOW); // tern off
 }
 
 /*________________________________________LOOP________________________________________*/
@@ -56,17 +56,7 @@ void loop(void) {
 
   unsigned long currentMillis = millis();
 
-  if (currentMillis - wifiReconnectMillis >= wifiReconnectPeriod) {     // update sensors every 'period'
-    wifiReconnectMillis = currentMillis;
-
-    if (wifiMulti.run() == WL_DISCONNECTED ||
-        wifiMulti.run() == WL_IDLE_STATUS ||
-        wifiMulti.run() == WL_CONNECT_FAILED) { // reconnect to a new Wifi point
-      startWiFi();
-    }
-  }
-
-  if (currentMillis - sensorsUpdateMillis >= sensorsUpdatePeriod) {     // update sensors every 'period'
+  if (currentMillis - sensorsUpdateMillis > sensorsUpdatePeriod) {     // update sensors every 'period'
     sensorsUpdateMillis = currentMillis;
 
     sensorData();                           // get sensors data
@@ -82,14 +72,14 @@ void loop(void) {
     sensorData();
     sensorDataError(t, h, p);             // handle 'nan' data at first boot
     displayYourStaff();                   // show collected data
-    
+
     first_power_on = false;
     writeSensorsDataTotheFiles();         // write sensor data on boot up (power On) when they are ready
   }
 
   if (currentMillis - lcd_update_Millis > lcd_update_period) {
     lcd_update_Millis = currentMillis;
-    
+
     displayYourStaff();                   // show collected data
   }
 
@@ -97,6 +87,16 @@ void loop(void) {
     sensorsRequestMillis = currentMillis;
 
     writeSensorsDataTotheFiles();         // write data to .csv files
+  }
+
+  if (currentMillis - wifiReconnectMillis > wifiReconnectPeriod) {     // update sensors every 'period'
+    wifiReconnectMillis = currentMillis;
+
+    if (wifiMulti.run() == WL_DISCONNECTED ||
+        wifiMulti.run() == WL_IDLE_STATUS ||
+        wifiMulti.run() == WL_CONNECT_FAILED) { // reconnect to a new Wifi point
+      startWiFi();
+    }
   }
 
   if (currentMillis - prevNTPMillis > intervalNTP) {  // Request the time from the time server every hour
@@ -113,15 +113,14 @@ void startWiFi() {      // Try to connect to some given access points. Then wait
   //WiFi.begin(ssid, password);
   wifiMulti.addAP(ssid_3, password_3);
   wifiMulti.addAP(ssid_4, password_4);
-  wifiMulti.addAP(ssid_1, password_1);      // add Wi-Fi networks you want to connect to
+  wifiMulti.addAP(ssid_1, password_1);        // add Wi-Fi networks you want to connect to
   wifiMulti.addAP(ssid_2, password_2);
 
-  Serial.println("Connecting...");                // Wait for the Wi-Fi to connect
-  wifiMulti.run();                                // wifiMulti.run() or WiFi.status()
-
+  Serial.println("Connecting...");            // Wait for the Wi-Fi to connect
+  wifiMulti.run();                            // wifiMulti.run() or WiFi.status()
   delay(10);
 
-  if (wifiMulti.run() == WL_CONNECTED) {          // Tell us what network we're connected to
+  if (wifiMulti.run() == WL_CONNECTED) {      // Tell us what network we're connected to
     Serial.println("\r\n");
     Serial.println("Connected to:\t" + (String) WiFi.SSID());
     Serial.print("IP address:\t");
@@ -132,7 +131,7 @@ void startWiFi() {      // Try to connect to some given access points. Then wait
 
 void startUDP() {
   Serial.println("Starting UDP");
-  UDP.begin(localPort);                         // Start listening for UDP messages to port 123
+  UDP.begin(localPort);                       // Start listening for UDP messages to port 123
   Serial.println("Local port:\t" + (String) UDP.localPort());
 }
 
@@ -147,9 +146,9 @@ void startOTA() {     // Start the OTA service
     Serial.println("\r\nEnd");
   });
   ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
-    digitalWrite(LED_BUILTIN, LOW);            // tern on
+    digitalWrite(LED_BUILTIN, HIGH);          // tern on
     Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
-    digitalWrite(LED_BUILTIN, HIGH);           // tern off
+    digitalWrite(LED_BUILTIN, LOW);           // tern off
   });
   ArduinoOTA.onError([](ota_error_t error) {
     Serial.printf("Error[%u]: ", error);
@@ -188,7 +187,7 @@ void startMDNS() {                              // Start the mDNS
 }
 
 void startServer() {                            // Start a HTTP server with a file read handler and an upload handler
-  server.on("/edit.html", HTTP_POST, []() {    // If a POST request is sent to the /edit.html address,
+  server.on("/edit.html", HTTP_POST, []() {     // If a POST request is sent to the /edit.html address,
     server.send(200, "text/plain", "");
   }, handleFileUpload);                         // go to 'handleFileUpload'
 
@@ -201,16 +200,16 @@ void startServer() {                            // Start a HTTP server with a fi
 /*________________________________________SERVER_HANDLERS________________________________________*/
 
 void handleNotFound() {     // if the requested file or page doesn't exist, return a 404 not found error
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(LED_BUILTIN, HIGH);
   if (!handleFileRead(server.uri())) {      // check if the file exists in the flash memory (SPIFFS), if so, send it
     server.send(404, "text/plain", "404: File Not Found");
   }
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
 }
 
 bool handleFileRead(String path) {                          // send the right file to the client (if it exists)
-  digitalWrite(LED_BUILTIN, LOW);
-  Serial.println("handleFileRead: " + path);
+  digitalWrite(LED_BUILTIN, HIGH);
+  //Serial.println("handleFileRead: " + path);
   if (path.endsWith("/")) path += "index.html";             // If a folder is requested, send the index file
   String contentType = getContentType(path);                // Get the MIME type
   String pathWithGz = path + ".gz";
@@ -221,16 +220,16 @@ bool handleFileRead(String path) {                          // send the right fi
     File file = SPIFFS.open(path, "r");                     // Open the file
     size_t sent = server.streamFile(file, contentType);     // Send it to the client
     file.close();                                           // Close the file again
-    Serial.println(String("\tSent file: ") + path);
+    //Serial.println(String("\tSent file: ") + path);
     return true;
   }
   Serial.println(String("\tFile Not Found: ") + path);      // If the file doesn't exist, return false
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(LED_BUILTIN, LOW);
   return false;
 }
 
 void handleFileUpload() { // upload a new file to the SPIFFS
-  digitalWrite(LED_BUILTIN, LOW);                        // tern on
+  digitalWrite(LED_BUILTIN, HIGH);                        // tern on
   HTTPUpload &upload = server.upload();
   String path;
   if (upload.status == UPLOAD_FILE_START) {
@@ -260,7 +259,7 @@ void handleFileUpload() { // upload a new file to the SPIFFS
       server.send(500, "text/plain", "500: couldn't create file");
     }
   }
-  digitalWrite(LED_BUILTIN, HIGH);           // tern off
+  digitalWrite(LED_BUILTIN, LOW);           // tern off
 }
 
 /*________________________________________HELPER_FUNCTIONS________________________________________*/
