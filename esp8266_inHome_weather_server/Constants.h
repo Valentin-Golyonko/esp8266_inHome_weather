@@ -3,21 +3,23 @@ const unsigned long wifiReconnectPeriod = 60000;
 unsigned long wifiReconnectMillis = 0;
 
 //--- wifi spots
-const char *ssid_1 = "xxxx";        // set up your own wifi config !
-const char *password_1 = "xxxx";
-const char *ssid_2 = "xxxx";
-const char *password_2 = "xxxx";
-const char *ssid_3 = "xxxx";
-const char *password_3 = "xxxx";
-const char *ssid_4 = "xxxx";
-const char *password_4 = "xxxx";
+const char* ssid_1 = "xxxx";        // set up your own wifi config !
+const char* password_1 = "xxxx";
+const char* ssid_2 = "xxxx";
+const char* password_2 = "xxxx";
+const char* ssid_3 = "xxxx";
+const char* password_3 = "xxxx";
+const char* ssid_4 = "xxxx";
+const char* password_4 = "xxxx";
+
+const char* host = "192.168.xxx.xxx.";    // server IP address
 
 //--- OTA
-const char *OTAName = "xxxx";       // A name and a password for the OTA service
-const char *OTAPassword = "xxxx";   // set up your own OTA pass!
+const char* OTAName = "xxxx";       // A name and a password for the OTA service
+const char* OTAPassword = "xxxx";   // set up your own OTA pass!
 
 //--- LAN Name - http://esp8266.local
-const char *mdnsName = "esp8266";                     // Domain name for the mDNS responder
+const char* mdnsName = "esp8266";                     // Domain name for the mDNS responder
 
 //--- Sensors
 const unsigned long sensorsRequestPeriod = 60000 * 10;    // store a date to a file every X min

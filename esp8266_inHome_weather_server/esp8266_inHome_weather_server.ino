@@ -1,8 +1,8 @@
 // Made by https://github.com/Valentin-Golyonko. Apache License 2.0.
 //
-// Sketch uses 387452 bytes (37%) of program storage space. Maximum is 1044464 bytes.
-// Global variables use 33024 bytes (40%) of dynamic memory,
-// leaving 48896 bytes for local variables. Maximum is 81920 bytes.
+//Sketch uses 392300 bytes (37%) of program storage space. Maximum is 1044464 bytes.
+//Global variables use 32312 bytes (39%) of dynamic memory,
+//leaving 49608 bytes for local variables. Maximum is 81920 bytes.
 //
 // "data" holder size = 21,407 bytes
 //
@@ -175,10 +175,10 @@ void startSPIFFS() {                            // Start the SPI Flash File Syst
     Serial.printf("\n");
   }
 
-  //SPIFFS.remove("/tempr.csv");                // remove data file
-  //SPIFFS.remove("/hum.csv");
-  //SPIFFS.remove("/air.csv");
-  //SPIFFS.remove("/pre.csv");
+  //  SPIFFS.remove("/tempr.csv");                // remove data file
+  //  SPIFFS.remove("/hum.csv");
+  //  SPIFFS.remove("/air.csv");
+  //  SPIFFS.remove("/pre.csv");
 }
 
 void startMDNS() {                              // Start the mDNS
@@ -333,39 +333,78 @@ void displayYourStaff() {
   }
 }
 
+void sendJson(int time_now) {
+  if (!client.connect(host, httpPort)) {
+    //Serial.println("connection failed");
+    return;
+  }
+
+  StaticJsonDocument<200> doc;
+  // DynamicJsonDocument  doc(200);
+  doc["sensor"] = "esp8266";
+  doc["time"] = time_now;
+  doc["temp"] = t;
+  doc["hum"] = h;
+  doc["air"] = a;
+  doc["pres"] = p;
+
+  serializeJson(doc, client);
+
+  unsigned long timeout = millis();
+  while (client.available() == 0) {
+    if (millis() - timeout > 5000) {
+      Serial.println(">>> Client Timeout !");
+      client.stop();
+      return;
+    }
+  }
+
+  // Read all the lines of the reply from server and print them to Serial
+  while (client.available()) {
+    String line = client.readStringUntil('\r');
+    Serial.print(line);
+  }
+
+  client.print("q");
+
+  Serial.println();
+  Serial.println("closing connection");
+}
+
 void writeSensorsDataTotheFiles() {
   DateTime now = rtc.now();
   uint32_t timeNow = now.unixtime() - 3 * 60 * 60; // minus 3h, TODO: Time Zone Problem !!!
   if (timeNow != 0) {
-    //showTimeNow();  // check time from RTC3231
 
-    String t_t = (String) t;                 // Compare to "nan", to avoid holes in the graphic
-    if (!t_t.equals("nan")) {
-      File tempLog = SPIFFS.open("/tempr.csv", "a");  // Write the time and the temperature to the csv file
-      tempLog.println((String) timeNow + ',' + (String) t);
-      tempLog.close();
-    }
+    sendJson(timeNow);
 
-    String h_t = (String) h;
-    if (!h_t.equals("nan")) {
-      File humLog = SPIFFS.open("/hum.csv", "a");
-      humLog.println((String) timeNow + ',' + (String) h);
-      humLog.close();
-    }
-
-    String air_t = (String) a;
-    if (!air_t.equals("nan")) {
-      File airLog = SPIFFS.open("/air.csv", "a");
-      airLog.println((String) timeNow + ',' + (String) a);
-      airLog.close();
-    }
-
-    String press_t = (String) p;
-    if (!press_t.equals("nan")) {
-      File preLog = SPIFFS.open("/pre.csv", "a");
-      preLog.println((String) timeNow + ',' + (String) p);
-      preLog.close();
-    }
+    //    String t_t = (String) t;                 // Compare to "nan", to avoid holes in the graphic
+    //    if (!t_t.equals("nan")) {
+    //      File tempLog = SPIFFS.open("/tempr.csv", "a");  // Write the time and the temperature to the csv file
+    //      tempLog.println((String) timeNow + ',' + (String) t);
+    //      tempLog.close();
+    //    }
+    //
+    //    String h_t = (String) h;
+    //    if (!h_t.equals("nan")) {
+    //      File humLog = SPIFFS.open("/hum.csv", "a");
+    //      humLog.println((String) timeNow + ',' + (String) h);
+    //      humLog.close();
+    //    }
+    //
+    //    String air_t = (String) a;
+    //    if (!air_t.equals("nan")) {
+    //      File airLog = SPIFFS.open("/air.csv", "a");
+    //      airLog.println((String) timeNow + ',' + (String) a);
+    //      airLog.close();
+    //    }
+    //
+    //    String press_t = (String) p;
+    //    if (!press_t.equals("nan")) {
+    //      File preLog = SPIFFS.open("/pre.csv", "a");
+    //      preLog.println((String) timeNow + ',' + (String) p);
+    //      preLog.close();
+    //    }
   } else {                                  // If we didn't receive an NTP response yet, send another request
     sendNTPpacket(timeServerIP);
     delay(10);
