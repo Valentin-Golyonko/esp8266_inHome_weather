@@ -7,6 +7,11 @@ esp8266 local web server with:
  - RTC ds3231 - 'offline' I2C clock;
  - Bootstrap web framework.
 
+# UPD:
+<p>24.07.19</p>
+<p>Now it connects to <a href="https://github.com/Valentin-Golyonko/HomeBox">HomeBox project</a>! It serialize Json data and sends all of them to Raspberry Pi server with Flask.</p>
+<p>If you need to use or test old version - comment line <code>sendJson(timeNow);</code> and uncomment others in the <code>writeSensorsDataTotheFiles()</code> function</p>
+
 # How it works
 In this example ESP8266 has:
  - local web server with OTA, mDNS, UDP (for NTP);
